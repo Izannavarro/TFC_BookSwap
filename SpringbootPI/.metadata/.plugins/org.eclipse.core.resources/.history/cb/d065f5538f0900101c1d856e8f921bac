@@ -1,0 +1,31 @@
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "User")
+public class User {
+	
+	@Id
+    private String _id;  // De vuelta a String para que Mongo genere el ObjectId automáticamente
+    private String name;
+    private String email;
+    private String address;
+    private double lat;
+    private double lng;
+    private String[] available_books;
+    private String registration_date;
+    
+    
+    public User() {}
+
+    public User(String name, String email, String address, double lat, double lng, String[] available_books, String registration_date) {
+        this.name = name;
+        this.email = email;
+        this.address = address;
+        this.lat = lat;
+        this.lng = lng;
+        this.available_books = available_books;
+        this.registration_date = registration_date;
+    }
+    
+    
+}
