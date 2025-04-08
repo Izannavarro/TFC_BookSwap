@@ -5,9 +5,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class User {
 	
 	@Id
-    private String _id;  // De vuelta a String para que Mongo genere el ObjectId automáticamente
-    private String name;
-    private String email;
+    private String id;  // De vuelta a String para que Mongo genere el ObjectId automáticamente
+    private String username;
+    private String password;
+    private String profilePicture;
     private String address;
     private double lat;
     private double lng;
@@ -17,9 +18,10 @@ public class User {
     
     public User() {}
 
-    public User(String name, String email, String address, double lat, double lng, String registration_date) {
-        this.name = name;
-        this.email = email;
+    public User(String name, String pwd, String profilePic, String address, double lat, double lng, String registration_date) {
+        this.username = name;
+        this.password = pwd;
+        this.profilePicture = profilePic;
         this.address = address;
         this.lat = lat;
         this.lng = lng;
@@ -29,27 +31,23 @@ public class User {
     
  // Getters y Setters
     public String getId() {
-        return _id;
+        return id;
     }
 
     public void setId(String _id) {
-        this._id = _id;
+        this.id = _id;
     }
 
     public String getName() {
-        return name;
+        return username;
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.username = name;
     }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
+    
+    public void getProfilePicture() {
+    	return profilePicture;
     }
 
     public String getAddress() {
