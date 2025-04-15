@@ -10,7 +10,13 @@ public class ExchangeRepository extends MongoRepository<Exchange, String> {
 	    @Query("{ 'owner_id' : ?0 }")
 	    List<Exchange> findByOwnerId(String ownerId);
 	    
-	   //Conseguir Exchange por fecha específica y owner_id
+	    //Conseguir Exchange por fecha específica y owner_id
 	    @Query("{ 'exchangeDate' : ?0, 'ownerId' : ?1 }")
 	    List<Exchange> findByExchangeDateAndOwnerId(String exchangeDate, String ownerId);
+	    
+	    // Encontrar intercambios donde el receiver_id sea el del usuario (pendientes)
+	    List<Exchange> findByReceiver_idAndStatus(String receiverId, String status);
+	    
+	    // Encontrar intercambios creados por el owner (pendientes)
+	    List<Exchange> findByOwner_idAndStatus(String ownerId, String status);
 }

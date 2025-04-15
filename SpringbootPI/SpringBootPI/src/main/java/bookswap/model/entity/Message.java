@@ -8,8 +8,8 @@ public class Message {
 
     public Message() {}
 
-    public Message(String message_id, String sender_id, String receiver_id, String content, String timestamp) {
-        this.message_id = message_id;
+    public Message(String sender_id, String receiver_id, String content, String timestamp) {
+    	this.message_id = UUID.randomUUID().toString();
         this.sender_id = sender_id;
         this.receiver_id = receiver_id;
         this.content = content;

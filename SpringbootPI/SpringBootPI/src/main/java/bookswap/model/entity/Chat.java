@@ -7,25 +7,23 @@ import java.util.List;
 public class Chat {
 
     @Id
-    private String _id;
+    private String id;
     private List<String> participants;
-    private String created_at;
     private List<Message> messages;
 
     public Chat() {}
 
     public Chat(List<String> participants, String created_at, List<Message> messages) {
         this.participants = participants;
-        this.created_at = created_at;
         this.messages = messages;
     }
 
     public String get_id() {
-        return _id;
+        return id;
     }
 
     public void set_id(String _id) {
-        this._id = _id;
+        this.id = _id;
     }
 
     public List<String> getParticipants() {
@@ -35,15 +33,7 @@ public class Chat {
     public void setParticipants(List<String> participants) {
         this.participants = participants;
     }
-
-    public String getCreated_at() {
-        return created_at;
-    }
-
-    public void setCreated_at(String created_at) {
-        this.created_at = created_at;
-    }
-
+    
     public List<Message> getMessages() {
         return messages;
     }
@@ -55,7 +45,7 @@ public class Chat {
     @Override
     public String toString() {
         return "Chat{" +
-                "_id='" + _id + '\'' +
+                "_id='" + id + '\'' +
                 ", participants=" + participants +
                 ", created_at='" + created_at + '\'' +
                 ", messages=" + messages +

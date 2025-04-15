@@ -1,22 +1,12 @@
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-@Document(collection = "Exchange")
-public class Exchange {
-	
-	@Id
-    private String id;
+public class ExchangeDTO {
     private String book_id;
     private String owner_id;
     private String receiver_id;
-    private String status;
+    private String status;  // Este estará en "pending" cuando lo creemos
     private String exchange_date;
 
-    // Constructor vacío
-    public Exchange() {}
-
-    // Constructor completo
-    public Exchange(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
+    // Constructor
+    public ExchangeDTO(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
         this.book_id = book_id;
         this.owner_id = owner_id;
         this.receiver_id = receiver_id;
@@ -25,14 +15,6 @@ public class Exchange {
     }
 
     // Getters y setters
-    public String get_id() {
-        return id;
-    }
-
-    public void set_id(String _id) {
-        this.id = _id;
-    }
-
     public String getBook_id() {
         return book_id;
     }
@@ -71,18 +53,5 @@ public class Exchange {
 
     public void setExchange_date(String exchange_date) {
         this.exchange_date = exchange_date;
-    }
-
-    // Método toString para depuración rápida
-    @Override
-    public String toString() {
-        return "Exchange{" +
-                "_id='" + id + '\'' +
-                ", book_id='" + book_id + '\'' +
-                ", owner_id='" + owner_id + '\'' +
-                ", receiver_id='" + receiver_id + '\'' +
-                ", status='" + status + '\'' +
-                ", exchange_date='" + exchange_date + '\'' +
-                '}';
     }
 }
