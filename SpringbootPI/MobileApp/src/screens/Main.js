@@ -2,6 +2,8 @@ import { StyleSheet, Text, Pressable, View, Image, ImageBackground } from 'react
 import { useState, useEffect, useContext } from 'react';
 import Context from './Context';
 import * as Font from 'expo-font';
+import { Dimensions } from 'react-native';
+const { width } = Dimensions.get('window');
 
 export default function Main({ navigation }) {
   const { theme } = useContext(Context);
@@ -28,13 +30,12 @@ export default function Main({ navigation }) {
     navigation.navigate('Register');
   };
 
-  if (!fontsLoaded) return null;
+  // if (!fontsLoaded) return null;
 
   return (
     <ImageBackground
-      source={require('../assets/IMAGEN_LOGIN.jpg')} // aquí tu imagen con sombreado
+      source={require('../assets/IMAGEN_LOGIN.jpg')}
       style={styles.background}
-      resizeMode="cover"
     >
       <View style={styles.overlay}>
         <Image style={styles.logo} source={require('../assets/LOGO_BOOKSWAP.png')} />
@@ -65,22 +66,22 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 40,
-    resizeMode: 'contain',
-  },
+  width: width * 1.2,     // 60% del ancho de pantalla
+  height: width * 0.6,    // misma proporción para mantenerlo cuadrado
+  resizeMode: 'contain',
+  marginBottom: 40,
+},
   cardContainer: {
-    width: '80%',
+    width: '60%',
     alignItems: 'center',
   },
   button: {
-    width: '65%',
-    padding: 12,
+    width: '70%',
+    padding: 15,
     borderRadius: 15,
-    marginVertical: 10,
+    marginVertical: 20,
     shadowColor: '#000',
-    elevation: 6,
+    elevation: 10,
   },
   buttonText: {
     fontFamily: 'alegraya-sans',

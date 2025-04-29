@@ -4,8 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { Provider } from './src/screens/Context';
 import Main from './src/screens/Main';
-//import Login from './src/screens/Login';
-//import Register from './src/screens/Register';
+import Login from './src/screens/Login';
+import Register from './src/screens/Register';
+import LoadingScreen from './src/screens/LoadingScreen';
+import AppStack from './src/navigation/AppStack';
 
 const Stack = createStackNavigator();
 
@@ -40,6 +42,11 @@ export default function App() {
           <Stack.Screen
             name="LoadingScreen"
             component={LoadingScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="AppStack"
+            component={AppStack}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
