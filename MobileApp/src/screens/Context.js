@@ -4,9 +4,10 @@ const Context = createContext();
 
 export const Provider = ({ children }) => {
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [picture, setPicture] = useState(null);
   const [token, setToken] = useState('');
-  const [password, setPassword] = useState('');
+  
 
   // const theme = {
   //   isDark,
