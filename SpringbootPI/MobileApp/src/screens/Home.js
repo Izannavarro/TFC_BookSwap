@@ -2,10 +2,8 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useEffect, useState } from 'react';
 import Geolocation from 'react-native-geolocation-service';
-import { useAppContext } from './Context';
 
-export default function Home() {
-  const { theme } = useAppContext();
+export default Home = () => {
   const [location, setLocation] = useState(null);
 
   useEffect(() => {
@@ -19,7 +17,7 @@ export default function Home() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={styles.container}>
       {/* Header con logo y perfil */}
       <View style={styles.header}>
         <Image source={require('../assets/LOGO_BOOKSWAP.png')} style={styles.logo} />
@@ -66,6 +64,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
     width: '100%',
