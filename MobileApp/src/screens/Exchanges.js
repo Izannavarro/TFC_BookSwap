@@ -22,10 +22,10 @@ export default Exchanges = () => {
   const [formVisible, setFormVisible] = useState(false);
 
   const [formData, setFormData] = useState({
-    book_id: '',
-    owner_id: '',
-    receiver_id: '',
-  });
+  bookTitle: '',
+  ownerName: '',
+  receiverName: '',
+});
 
   useEffect(() => {
     fetch('http://localhost:8080/bookswap/get_exchanges')

@@ -7,18 +7,17 @@ import toImageUri from '../utilities/toImageUri';
 
 export default function Login({ navigation }) {
   const {
-    name,
-    setName,
+    username,
+    setUsername,
     password,
     setPassword,
-    setPicture,
   } = useContext(Context);
 
   // const [fontsLoaded, setFontsLoaded] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const toApp = async () => {
-    if (!name || !password) {
+    if (!username || !password) {
       Alert.alert('El usuario o la contraseña no pueden estar vacíos.');
       return;
     }
@@ -58,7 +57,7 @@ export default function Login({ navigation }) {
   };
 
   const toMain = () => {
-    setName('');
+    setUsername('');
     navigation.navigate('Main');
   };
 
@@ -89,7 +88,7 @@ export default function Login({ navigation }) {
             label="Usuario"
             mode="flat"
             value={name}
-            onChangeText={setName}
+            onChangeText={setUsername}
             style={styles.input}
             theme={{ colors: { text: '#000', primary: '#96cf24' } }}
           />

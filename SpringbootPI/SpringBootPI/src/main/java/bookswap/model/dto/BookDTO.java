@@ -4,18 +4,18 @@ public class BookDTO {
     private String genre;
     private String description;
     private String image_url;
-    private String owner_id;
+    private String owner_username;
     private String publication_date;
 
     public BookDTO() {}
 
-    public BookDTO(String title, String author, String genre, String description, String image_url, String owner_id, String publication_date) {
+    public BookDTO(String title, String author, String genre, String description, String image_url, String owner_username, String publication_date) {
         this.title = title;
         this.author = author;
         this.genre = genre;
         this.description = description;
         this.image_url = image_url;
-        this.owner_id = owner_id;
+        this.owner_username = owner_username;
         this.publication_date = publication_date;
     }
 
@@ -59,12 +59,12 @@ public class BookDTO {
         this.image_url = image_url;
     }
 
-    public String getOwner_id() {
-        return owner_id;
+    public String getOwner_username() {
+        return owner_username;
     }
 
-    public void setOwner_id(String owner_id) {
-        this.owner_id = owner_id;
+    public void setOwner_username(String owner_id) {
+        this.owner_username = owner_username;
     }
 
     public String getPublication_date() {

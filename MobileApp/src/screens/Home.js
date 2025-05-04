@@ -2,11 +2,16 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useEffect, useState } from 'react';
 import Geolocation from 'react-native-geolocation-service';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 
 export default Home = () => {
   const [location, setLocation] = useState(null);
+  const [userMarkers, setUserMarkers] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
+    // Pedir permisos y obtener ubicación
     Geolocation.requestAuthorization('whenInUse').then(() => {
       Geolocation.getCurrentPosition(
         (pos) => setLocation(pos.coords),
@@ -14,14 +19,26 @@ export default Home = () => {
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     });
+
+    // Llamar al backend para obtener las coordenadas de los usuarios
+    fetchUserCoordinates();
   }, []);
+
+  const fetchUserCoordinates = async () => {
+    try {
+      const res = await axios.get('http://<TU_BACKEND>/api/users/coordinates');
+      setUserMarkers(res.data); // Espera un array de objetos con lat y lng
+    } catch (error) {
+      console.warn('Error fetching user coordinates:', error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header con logo y perfil */}
+      {/* Header */}
       <View style={styles.header}>
         <Image source={require('../assets/LOGO_BOOKSWAP.png')} style={styles.logo} />
-        <TouchableOpacity onPress={() => {/* navegar al perfil */}}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image source={require('../assets/LOGO_BOOKSWAP.png')} style={styles.avatar} />
         </TouchableOpacity>
       </View>
@@ -30,7 +47,8 @@ export default Home = () => {
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
-          region={
+          showsUserLocation={true}
+          initialRegion={
             location
               ? {
                   latitude: location.latitude,
@@ -45,21 +63,36 @@ export default Home = () => {
                   longitudeDelta: 0.01,
                 }
           }>
+          {/* Marcador del usuario actual */}
           {location && (
             <Marker
               coordinate={{
                 latitude: location.latitude,
                 longitude: location.longitude,
               }}
-              title="You are here"
-              description="Current location"
+              title="Tú"
+              description="Tu ubicación actual"
+              pinColor="blue"
             />
           )}
+
+          {/* Marcadores de otros usuarios */}
+          {userMarkers.map((user) => (
+            <Marker
+              key={user._id}
+              coordinate={{
+                latitude: user.coordinates.lat,
+                longitude: user.coordinates.lng,
+              }}
+              title={user.name}
+              description={user.address}
+            />
+          ))}
         </MapView>
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

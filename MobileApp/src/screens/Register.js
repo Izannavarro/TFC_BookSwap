@@ -11,25 +11,15 @@ export default function Register({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
-  // const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  // useEffect(() => {
-  //   const loadFonts = async () => {
-  //     await Font.loadAsync({
-  //       'alegraya-sans': require('../assets/fonts/AlegreyaSansSC-Regular.ttf'),
-  //     });
-  //     setFontsLoaded(true);
-  //   };
-  //   loadFonts();
-  // }, []);
+  const [address, setAddress] = useState('');
 
   const toMain = () => {
     navigation.navigate('Main');
   };
 
   const toApp = async () => {
-    if (!textName || !password) {
-      alert('Neither the username nor the password can be empty.');
+    if (!textName || !password || !address) {
+      alert('Username, password, and address cannot be empty.');
       return;
     }
     if (password !== confirmPassword) {
@@ -38,10 +28,20 @@ export default function Register({ navigation }) {
     }
 
     try {
+      // Get coordinates from the address via backend
+      const geoResponse = await fetch(`http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`);
+      const geoData = await geoResponse.json();
+
+      if (!geoData || !geoData.lat || !geoData.lng) {
+        alert('Failed to get coordinates from the address.');
+        return;
+      }
+
+      // Now we register the user
       const response = await fetch('http://localhost:8080/bookswap/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: textName, password }),
+        body: JSON.stringify({ username: textName, password, address, lat: geoData.lat, lng: geoData.lng }),
       });
 
       const responseText = await response.text();
@@ -66,8 +66,6 @@ export default function Register({ navigation }) {
       console.error(error);
     }
   };
-
-  // if (!fontsLoaded) return null;
 
   return (
     <ImageBackground
@@ -113,6 +111,14 @@ export default function Register({ navigation }) {
                 onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
               />
             }
+            style={styles.input}
+          />
+
+          <TextInput
+            placeholder="Address (ex: Av. Corrientes 1234, Buenos Aires, Argentina)"
+            placeholderTextColor="#555"
+            value={address}
+            onChangeText={setAddress}
             style={styles.input}
           />
 

@@ -13,12 +13,10 @@ public class User {
     private double lat;
     private double lng;
     private List<String> available_books = new ArrayList<>();
-    private String registration_date;
-    
     
     public User() {}
 
-    public User(String name, String pwd, String profilePic, String address, double lat, double lng, String registration_date) {
+    public User(String name, String pwd, String profilePic, String address, double lat, double lng) {
         this.username = name;
         this.password = pwd;
         this.profilePicture = profilePic;
@@ -26,7 +24,6 @@ public class User {
         this.lat = lat;
         this.lng = lng;
         this.available_books = available_books;
-        this.registration_date = registration_date;
     }
     
  // Getters y Setters
@@ -80,13 +77,5 @@ public class User {
 
     public void setAvailableBooks(String[] available_books) {
         this.available_books = available_books;
-    }
-
-    public String getRegistrationDate() {
-        return registration_date;
-    }
-
-    public void setRegistrationDate(String registration_date) {
-        this.registration_date = registration_date;
     }
 }

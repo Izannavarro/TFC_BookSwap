@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   Image,
-  Switch,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -12,14 +11,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { Context } from './Context';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import Context from './Context';
 
-export default Settings = () => {
+const Settings = () => {
   const {
     name,
     password,
-    theme,
-    setTheme,
     setToken,
     setName,
     setPassword,
@@ -29,6 +27,7 @@ export default Settings = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const [editedPassword, setEditedPassword] = useState(password);
+  const [avatarUri, setAvatarUri] = useState('https://i.pravatar.cc/150?img=3');
 
   const handleLogout = () => {
     setToken(null);
@@ -57,29 +56,50 @@ export default Settings = () => {
     );
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-
   const handleUpdate = () => {
     setIsEditing(true);
+    Alert.alert(
+      'Change Photo',
+      'Choose a method to update your profile photo:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera({ mediaType: 'photo' }, (response) => {
+              if (response.assets && response.assets[0]) {
+                setAvatarUri(response.assets[0].uri);
+              }
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary({ mediaType: 'photo' }, (response) => {
+              if (response.assets && response.assets[0]) {
+                setAvatarUri(response.assets[0].uri);
+              }
+            });
+          },
+        },
+      ]
+    );
   };
 
   const handleSave = () => {
     setName(editedName);
     setPassword(editedPassword);
     setIsEditing(false);
-    // Aquí podrías hacer una petición al backend para guardar los datos
     Alert.alert('Updated', 'Your profile has been updated.');
   };
 
   return (
-    <ScrollView style={[styles.container, theme === 'dark' && styles.dark]}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Image
-          source={{ uri: 'https://i.pravatar.cc/150?img=3' }}
-          style={styles.avatar}
-        />
+        <TouchableOpacity disabled={!isEditing} onPress={handleUpdate}>
+          <Image source={{ uri: avatarUri }} style={styles.avatar} />
+        </TouchableOpacity>
         <View style={styles.userInfo}>
           <View style={styles.inputRow}>
             <Icon name="person-outline" size={20} color="#888" />
@@ -114,15 +134,8 @@ export default Settings = () => {
         )}
       </View>
 
-      {/* Ajustes */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>General</Text>
-
-        <View style={styles.item}>
-          <Icon name="moon-outline" size={20} color="#555" />
-          <Text style={styles.itemText}>Dark Mode</Text>
-          <Switch value={theme === 'dark'} onValueChange={toggleTheme} />
-        </View>
 
         <TouchableOpacity style={styles.item} onPress={handleLogout}>
           <Icon name="log-out-outline" size={20} color="#555" />
@@ -145,14 +158,13 @@ export default Settings = () => {
   );
 };
 
+export default Settings;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
     padding: 16,
-  },
-  dark: {
-    backgroundColor: '#121212',
   },
   header: {
     flexDirection: 'row',

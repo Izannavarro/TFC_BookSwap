@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import {
   View,
   Text,
@@ -12,8 +12,12 @@ import {
   Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Context from './Context';
 
 export default Books = () => {
+  const {
+    username,
+  } = useContext(Context);
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -28,25 +32,44 @@ export default Books = () => {
   });
   const [bookToDelete, setBookToDelete] = useState('');
 
+  useEffect(() => {
+    // Simulamos la obtención de libros
+    fetch('http://localhost:8080/bookswap/get_books')
+      .then(res => res.json())
+      .then(setBooks)
+      .catch(console.warn);
+  }, []);
+
   const handleAddBook = async () => {
+    if (!user) {
+      Alert.alert('Error', 'Debes estar logueado para añadir un libro');
+      return;
+    }
+
+    // Asignamos automáticamente el username del usuario actual
+    const bookData = { ...formData, owner_username: username };
+
     try {
       const response = await fetch('http://localhost:8080/bookswap/add_book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(bookData),
       });
 
       if (!response.ok) throw new Error('Error al añadir libro');
 
-      const newBook = await response.json(); // assuming server returns the new book
+      const newBook = await response.json();
       setBooks([...books, newBook]);
+
       setFormData({
         title: '',
         author: '',
         genre: '',
         description: '',
         image_url: '',
+        owner_username: '', // Limpiar
       });
+
       setAddModalVisible(false);
     } catch (error) {
       Alert.alert('Error', error.message);
@@ -55,14 +78,11 @@ export default Books = () => {
 
   const handleDeleteBook = async () => {
     try {
-      const response = await fetch(
-        'http://localhost:8080/bookswap/delete_book',
-        {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: bookToDelete }),
-        }
-      );
+      const response = await fetch('http://localhost:8080/bookswap/delete_book', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: bookToDelete }),
+      });
 
       if (!response.ok) throw new Error('Error al eliminar libro');
 
@@ -117,7 +137,7 @@ export default Books = () => {
         )}
       </View>
 
-      {/* Modal de Detalles */}
+      {/* Modal Detalles */}
       <Modal visible={detailModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -131,17 +151,14 @@ export default Books = () => {
                 <Text>Author: {selectedBook.author}</Text>
                 <Text>Genre: {selectedBook.genre}</Text>
                 <Text>Description: {selectedBook.description}</Text>
-                <Text>Owner ID: {selectedBook.owner_id}</Text>
+                <Text>Owner: {selectedBook.owner_username}</Text> {/* Aquí se muestra el username */}
                 <Text>
                   Published:{' '}
                   {new Date(selectedBook.publication_date).toDateString()}
                 </Text>
               </>
             )}
-            <Button
-              title="Cerrar"
-              onPress={() => setDetailModalVisible(false)}
-            />
+            <Button title="Cerrar" onPress={() => setDetailModalVisible(false)} />
           </View>
         </View>
       </Modal>
@@ -178,9 +195,7 @@ export default Books = () => {
       <Modal visible={deleteModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Selecciona un libro a eliminar
-            </Text>
+            <Text style={styles.modalTitle}>Selecciona un libro a eliminar</Text>
             <Picker
               selectedValue={bookToDelete}
               onValueChange={(itemValue) => setBookToDelete(itemValue)}>
