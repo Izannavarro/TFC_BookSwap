@@ -12,7 +12,6 @@ public class User {
     private String address;
     private double lat;
     private double lng;
-    private List<String> available_books = new ArrayList<>();
     
     public User() {}
 
@@ -23,7 +22,6 @@ public class User {
         this.address = address;
         this.lat = lat;
         this.lng = lng;
-        this.available_books = available_books;
     }
     
  // Getters y Setters
@@ -69,13 +67,5 @@ public class User {
 
     public void setLng(double lng) {
         this.lng = lng;
-    }
-
-    public String[] getAvailableBooks() {
-        return available_books;
-    }
-
-    public void setAvailableBooks(String[] available_books) {
-        this.available_books = available_books;
     }
 }

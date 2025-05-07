@@ -87,7 +87,7 @@ export default function Login({ navigation }) {
           <TextInput
             label="Usuario"
             mode="flat"
-            value={name}
+            value={username}
             onChangeText={setUsername}
             style={styles.input}
             theme={{ colors: { text: '#000', primary: '#96cf24' } }}

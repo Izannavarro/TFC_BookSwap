@@ -8,24 +8,28 @@ import {
   Modal,
   StyleSheet,
   TextInput,
-  Button,
   Alert,
+  Button,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { useRoute } from '@react-navigation/native';
 
 export default Exchanges = () => {
+  const route = useRoute();
+
   const [exchanges, setExchanges] = useState([]);
   const [books, setBooks] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedExchange, setSelectedExchange] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
+  const [targetUser, setTargetUser] = useState(null);
+  const [offeredBook, setOfferedBook] = useState('');
+  const [receivedExchanges, setReceivedExchanges] = useState([]);
+  const [receivedModalVisible, setReceivedModalVisible] = useState(false);
 
-  const [formData, setFormData] = useState({
-  bookTitle: '',
-  ownerName: '',
-  receiverName: '',
-});
+  const currentUsername = 'NombreDelUsuarioActual'; // TODO: reemplazar por contexto/autenticación real
+  const token = 'TOKEN'; // TODO: token real
 
   useEffect(() => {
     fetch('http://localhost:8080/bookswap/get_exchanges')
@@ -33,16 +37,23 @@ export default Exchanges = () => {
       .then(setExchanges)
       .catch(console.warn);
 
-    fetch('http://localhost:8080/bookswap/get_books')
+    fetch(`http://localhost:8080/bookswap/get_books`)
       .then(res => res.json())
       .then(setBooks)
       .catch(console.warn);
 
-    fetch('http://localhost:8080/bookswap/get_users')
+    fetch(`http://localhost:8080/bookswap/get_users?token=${token}`)
       .then(res => res.json())
       .then(setUsers)
       .catch(console.warn);
   }, []);
+
+  useEffect(() => {
+    if (route.params?.showCreateModal) {
+      setTargetUser(route.params.selectedUser || null);
+      setFormVisible(true);
+    }
+  }, [route.params]);
 
   const getBookTitle = (bookId) => {
     const book = books.find(b => b._id === bookId);
@@ -51,18 +62,66 @@ export default Exchanges = () => {
 
   const getUser = (userId) => users.find(u => u._id === userId);
 
-  const handleCreateExchange = async () => {
+  const fetchReceivedExchanges = async () => {
     try {
-      const res = await fetch('http://localhost:8080/bookswap/add_exchange', {
+      const response = await fetch(`http://localhost:8080/bookswap/getReceivedExchanges?receiverUsername=${currentUsername}&token=${token}`);
+      const data = await response.json();
+      setReceivedExchanges(data);
+      setReceivedModalVisible(true);
+    } catch (error) {
+      Alert.alert("Error", "No se pudieron cargar los intercambios recibidos.");
+    }
+  };
+
+  const updateExchangeStatus = async (exchangeId, newStatus) => {
+    try {
+      await fetch(`http://localhost:8080/bookswap/updateExchangeStatus`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exchangeId, status: newStatus }),
+      });
+      setReceivedExchanges(prev =>
+        prev.filter(exchange => exchange._id !== exchangeId)
+      );
+    } catch (err) {
+      Alert.alert("Error", "No se pudo actualizar el estado.");
+    }
+  };
+
+  const handleCreateExchange = async () => {
+    if (!offeredBook || !targetUser) {
+      Alert.alert('Error', 'Por favor selecciona el libro ofrecido.');
+      return;
+    }
+
+    const data = {
+      bookTitle: offeredBook,
+      ownerName: currentUsername,
+      receiverName: targetUser.username,
+    };
+
+    try {
+      const res = await fetch('http://localhost:8080/bookswap/addExchange?token=' + token, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       });
+
       if (!res.ok) throw new Error('Failed to create exchange');
       const newExchange = await res.json();
       setExchanges([...exchanges, newExchange]);
       setFormVisible(false);
-      setFormData({ book_id: '', owner_id: '', receiver_id: '' });
+      setOfferedBook('');
+
+      // Eliminar el libro del backend
+      await fetch('http://localhost:8080/bookswap/deleteBook', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: offeredBook,
+          owner_username: currentUsername,
+        }),
+      });
     } catch (err) {
       Alert.alert('Error', err.message);
     }
@@ -112,9 +171,13 @@ export default Exchanges = () => {
         <TouchableOpacity style={styles.createButton} onPress={() => setFormVisible(true)}>
           <Text style={styles.buttonText}>Create Exchange</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={[styles.createButton, { backgroundColor: '#2196F3', marginTop: 10 }]} onPress={fetchReceivedExchanges}>
+          <Text style={styles.buttonText}>Received Exchanges</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Modal Detalles */}
+      {/* Modal detalles */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -132,44 +195,45 @@ export default Exchanges = () => {
         </View>
       </Modal>
 
-      {/* Modal Crear Intercambio */}
+      {/* Modal crear intercambio */}
       <Modal visible={formVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Exchange</Text>
+            <Text style={styles.label}>Con: {targetUser?.username || "Usuario no seleccionado"}</Text>
 
-            <Text style={styles.label}>Book</Text>
-            <Picker
-              selectedValue={formData.book_id}
-              onValueChange={(val) => setFormData({ ...formData, book_id: val })}>
-              <Picker.Item label="Select a book" value="" />
-              {books.map(book => (
-                <Picker.Item key={book._id} label={book.title} value={book._id} />
-              ))}
-            </Picker>
+            <TextInput
+              placeholder="Tu libro ofrecido"
+              style={styles.input}
+              value={offeredBook}
+              onChangeText={setOfferedBook}
+            />
+            <Button title="Crear" onPress={handleCreateExchange} />
+            <Button title="Cancelar" color="gray" onPress={() => setFormVisible(false)} />
+          </View>
+        </View>
+      </Modal>
 
-            <Text style={styles.label}>Owner</Text>
-            <Picker
-              selectedValue={formData.owner_id}
-              onValueChange={(val) => setFormData({ ...formData, owner_id: val })}>
-              <Picker.Item label="Select owner" value="" />
-              {users.map(user => (
-                <Picker.Item key={user._id} label={user.name} value={user._id} />
-              ))}
-            </Picker>
-
-            <Text style={styles.label}>Receiver</Text>
-            <Picker
-              selectedValue={formData.receiver_id}
-              onValueChange={(val) => setFormData({ ...formData, receiver_id: val })}>
-              <Picker.Item label="Select receiver" value="" />
-              {users.map(user => (
-                <Picker.Item key={user._id} label={user.name} value={user._id} />
-              ))}
-            </Picker>
-
-            <Button title="Create" onPress={handleCreateExchange} />
-            <Button title="Cancel" color="gray" onPress={() => setFormVisible(false)} />
+      {/* Modal de intercambios recibidos */}
+      <Modal visible={receivedModalVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Intercambios Recibidos</Text>
+            {receivedExchanges.length === 0 ? (
+              <Text>No tienes intercambios pendientes.</Text>
+            ) : (
+              receivedExchanges.map((ex, i) => (
+                <View key={i} style={{ marginBottom: 10 }}>
+                  <Text>{getBookTitle(ex.book_id)}</Text>
+                  <Text>{new Date(ex.exchange_date).toLocaleString()}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Button title="Accept" onPress={() => updateExchangeStatus(ex._id, 'accepted')} />
+                    <Button title="Deny" onPress={() => updateExchangeStatus(ex._id, 'denied')} />
+                  </View>
+                </View>
+              ))
+            )}
+            <Button title="Cerrar" onPress={() => setReceivedModalVisible(false)} />
           </View>
         </View>
       </Modal>
@@ -242,5 +306,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    marginVertical: 10,
+    borderRadius: 8,
   },
 });

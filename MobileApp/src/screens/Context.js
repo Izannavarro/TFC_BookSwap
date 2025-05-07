@@ -7,7 +7,7 @@ export const Provider = ({ children }) => {
   const [password, setPassword] = useState('');
   const [picture, setPicture] = useState(null);
   const [token, setToken] = useState('');
-
+  const [userBooks, setUserBooks] = useState([]);
 
   return (
     <Context.Provider

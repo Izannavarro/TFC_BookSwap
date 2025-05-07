@@ -1,4 +1,6 @@
 public class ExchangeDTO {
+	
+	private String id;
     private String book_id;
     private String owner_id;
     private String receiver_id;
@@ -6,7 +8,7 @@ public class ExchangeDTO {
     private String exchange_date;
 
     // Constructor
-    public ExchangeDTO(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
+    public ExchangeDTO(String id, String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
         this.book_id = book_id;
         this.owner_id = owner_id;
         this.receiver_id = receiver_id;
@@ -15,6 +17,15 @@ public class ExchangeDTO {
     }
 
     // Getters y setters
+    
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public String getBook_id() {
         return book_id;
     }

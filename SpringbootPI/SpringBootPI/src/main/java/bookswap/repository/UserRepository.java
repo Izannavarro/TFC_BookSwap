@@ -14,6 +14,6 @@ public interface UserRepository extends MongoRepository<User, String> {
 	@Query(value = "{ 'username': ?0 }")
 	Optional<User> getUserByName(String name);
 	
-	@Query(value = "{ 'id': ?0 }")
-	Optional<User> getUserById(String id);
+	 // Encontrar todos los usuarios (sin incluir al usuario actual)
+    List<User> findByUsernameNot(String username);
 }

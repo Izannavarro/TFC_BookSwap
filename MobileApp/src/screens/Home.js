@@ -1,17 +1,30 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Modal,
+  Alert,
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import Geolocation from 'react-native-geolocation-service';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
+import Context from './Context'; // Ajusta la ruta si es diferente
 
-export default Home = () => {
+export default function Home() {
   const [location, setLocation] = useState(null);
   const [userMarkers, setUserMarkers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userModalVisible, setUserModalVisible] = useState(false);
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
+
+  const { token, username } = useContext(Context);
 
   useEffect(() => {
-    // Pedir permisos y obtener ubicación
     Geolocation.requestAuthorization('whenInUse').then(() => {
       Geolocation.getCurrentPosition(
         (pos) => setLocation(pos.coords),
@@ -20,16 +33,41 @@ export default Home = () => {
       );
     });
 
-    // Llamar al backend para obtener las coordenadas de los usuarios
     fetchUserCoordinates();
   }, []);
 
+  useEffect(() => {
+    if (!isFocused) {
+      setSelectedUser(null);
+      setUserModalVisible(false);
+    }
+  }, [isFocused]);
+
   const fetchUserCoordinates = async () => {
     try {
-      const res = await axios.get('http://<TU_BACKEND>/api/users/coordinates');
-      setUserMarkers(res.data); // Espera un array de objetos con lat y lng
+      const res = await axios.get(
+        'http://localhost:8080/bookswap/user_locations',
+        {
+          params: { username },
+        }
+      );
+      setUserMarkers(res.data);
     } catch (error) {
       console.warn('Error fetching user coordinates:', error.message);
+    }
+  };
+
+  const handleMarkerPress = async (name) => {
+    setSelectedUser(null);
+
+    try {
+      const res = await axios.get('http://localhost:8080/bookswap/userInfo', {
+        params: { name, token },
+      });
+      setSelectedUser(res.data);
+      setUserModalVisible(true);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo cargar la información del usuario.');
     }
   };
 
@@ -37,9 +75,15 @@ export default Home = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Image source={require('../assets/LOGO_BOOKSWAP.png')} style={styles.logo} />
+        <Image
+          source={require('../assets/LOGO_BOOKSWAP.png')}
+          style={styles.logo}
+        />
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-          <Image source={require('../assets/LOGO_BOOKSWAP.png')} style={styles.avatar} />
+          <Image
+            source={require('../assets/LOGO_BOOKSWAP.png')}
+            style={styles.avatar}
+          />
         </TouchableOpacity>
       </View>
 
@@ -63,42 +107,77 @@ export default Home = () => {
                   longitudeDelta: 0.01,
                 }
           }>
-          {/* Marcador del usuario actual */}
-          {location && (
-            <Marker
-              coordinate={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-              }}
-              title="Tú"
-              description="Tu ubicación actual"
-              pinColor="blue"
-            />
-          )}
-
-          {/* Marcadores de otros usuarios */}
           {userMarkers.map((user) => (
             <Marker
-              key={user._id}
-              coordinate={{
-                latitude: user.coordinates.lat,
-                longitude: user.coordinates.lng,
-              }}
-              title={user.name}
+              key={user.username}
+              coordinate={{ latitude: user.lat, longitude: user.lng }}
+              title={user.username}
               description={user.address}
+              onPress={() => handleMarkerPress(user.username)}
             />
           ))}
         </MapView>
       </View>
+
+      {/* Modal con información del usuario */}
+      {selectedUser && (
+        <Modal
+          visible={userModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => {
+            setUserModalVisible(false);
+            setSelectedUser(null);
+          }}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Image
+                source={{
+                  uri: `data:image/png;base64,${selectedUser.profilePicture}`,
+                }}
+                style={styles.modalImage}
+              />
+              <Text style={styles.modalTitle}>{selectedUser.username}</Text>
+              <Text style={styles.modalText}>{selectedUser.address}</Text>
+              <Text style={styles.modalSubtitle}>Libros disponibles:</Text>
+              {selectedUser.availableBooks.length > 0 ? (
+                selectedUser.availableBooks.map((book, i) => (
+                  <Text key={i} style={styles.modalBook}>
+                    {book.title}
+                  </Text>
+                ))
+              ) : (
+                <Text style={styles.modalBook}>No hay libros disponibles</Text>
+              )}
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setUserModalVisible(false);
+                  setSelectedUser(null);
+                }}>
+                <Text style={styles.closeButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.exchangeButton}
+                onPress={() => {
+                  setUserModalVisible(false);
+                  navigation.navigate('Exchanges', {
+                    selectedUser: selectedUser,
+                    showCreateModal: true,
+                  });
+                }}>
+                <Text style={styles.exchangeButtonText}>Create Exchange</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   header: {
     width: '100%',
     paddingHorizontal: 15,
@@ -108,11 +187,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#d3a3ff',
   },
-  logo: {
-    width: 50,
-    height: 40,
-    resizeMode: 'contain',
-  },
+  logo: { width: 50, height: 40, resizeMode: 'contain' },
   avatar: {
     width: 40,
     height: 40,
@@ -120,11 +195,48 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#a0c4ff',
   },
-  mapContainer: {
+  mapContainer: { flex: 1, overflow: 'hidden' },
+  map: { flex: 1 },
+  modalContainer: {
     flex: 1,
-    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  map: {
-    flex: 1,
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
   },
+  modalImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
+  modalText: { fontSize: 14, textAlign: 'center', marginBottom: 10 },
+  modalSubtitle: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
+  modalBook: { fontSize: 14, marginVertical: 2 },
+  closeButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#d3a3ff',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  closeButtonText: { fontWeight: 'bold', color: '#fff' },
+  exchangeButton: {
+  marginTop: 10,
+  padding: 10,
+  backgroundColor: '#a0c4ff',
+  borderRadius: 10,
+  alignItems: 'center',
+},
+exchangeButtonText: {
+  fontWeight: 'bold',
+  color: '#fff',
+},
 });

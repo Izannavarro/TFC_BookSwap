@@ -9,11 +9,7 @@ public interface BookRepository extends MongoRepository<Book, String> {
 	@Query("{ 'owner_username': ?0 }")
 	List<Book> findByOwnerUsername(String ownerUsername);
 
-
-    @Query(value = "{ 'owner_username': ?0 }", sort = "{ 'publication_date': -1 }")
-    List<Book> findByOwnerUsernameOrderByPublicationDateDesc(String ownerUsername);
-
-    
-    
+	// Buscar los libros por su id de propietario (owner_id)
+    List<Book> findByOwnerId(String ownerId);
     
 }

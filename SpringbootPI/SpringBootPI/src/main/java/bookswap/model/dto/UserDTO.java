@@ -14,6 +14,15 @@ public class UserDTO {
         this.lat = lat;
         this.lng = lng;
     }
+    
+    public UserDTO(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+    
+    public UserDTO(String username) {
+        this.username = username;
+    }
 
     // Getters y setters para los nuevos campos
     public String getUsername() {

@@ -4,14 +4,17 @@ import bookswap.repository.BookRepository;
 import bookswap.repository.ChatRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,14 +24,32 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import org.apache.commons.codec.digest.DigestUtils;
-import bookswap.dto.UserDTO;
-import bookswap.dto.UserInfo;
-import bookswap.dto.GeocodeResponseDTO;
-import bookswap.model.User;
-import bookswap.model.Book;
-import bookswap.model.UserInfo;
+
+import org.springframework.web.client.RestTemplate;
+
+import bookswap.model.dto.UserDTO;
+import bookswap.model.dto.UserPUT;
+import bookswap.model.dto.UserInfo;
+import bookswap.model.dto.GeocodeResponseDTO;
+import bookswap.model.dto.BookDTO;
+import bookswap.model.dto.ChatDTO;
+import bookswap.model.dto.ExchangeDTO;
+import bookswap.model.dto.MessageDTO;
+import bookswap.model.dto.MessageInfo;
+
+import bookswap.model.entity.User;
+import bookswap.model.entity.Book;
+import bookswap.model.entity.Chat;
+import bookswap.model.entity.Exchange;
+import bookswap.model.entity.Message;
+import bookswap.model.entity.GeocodeResponse;
+import bookswap.model.entity.GeocodeResult;
+import bookswap.model.entity.GeocodeService;
+
 import bookswap.utils.Utilities;
+
 
 @RestController
 public class Controller {
@@ -90,32 +111,6 @@ public class Controller {
 		}
 	}
 	
-	@GetMapping("/bookswap/geocode")
-	public ResponseEntity<Object> getCoordinates(@RequestParam("address") String address) {
-	    try {
-	        // Crea la URL de Google Geocoding API
-	        String geocodeUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" 
-	                + address.replace(" ", "+") + "&key=" + googleApiKey;
-
-	        // Realiza la petición HTTP
-	        RestTemplate restTemplate = new RestTemplate();
-	        String jsonResponse = restTemplate.getForObject(geocodeUrl, String.class);
-
-	        // Parsear el JSON de respuesta
-	        GeocodeResponseDTO responseDTO = parseGeocodeResponse(jsonResponse);
-
-	        if (responseDTO != null) {
-	            return ResponseEntity.status(HttpStatus.OK).body(responseDTO);
-	        } else {
-	            // Si no encontramos coordenadas, retornamos un error 404
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Coordinates not found.");
-	        }
-	    } catch (Exception e) {
-	        // Si ocurre un error, retornamos un error 500
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing geocoding request.");
-	    }
-	}
-	
 	
 	@PostMapping("imgini/register")
 	public ResponseEntity<Object> register(@RequestBody UserDTO userDTO) {
@@ -144,7 +139,56 @@ public class Controller {
 	        return ResponseEntity.status(HttpStatus.OK).body(token);
 	    }
 	}
+	
+	@GetMapping("/bookswap/geocode")
+	public ResponseEntity<Object> getCoordinates(@RequestParam("address") String address) {
+	    try {
+	        // Crea la URL de Google Geocoding API
+	        String geocodeUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" 
+	                + address.replace(" ", "+") + "&key=" + googleApiKey;
 
+	        // Realiza la petición HTTP
+	        RestTemplate restTemplate = new RestTemplate();
+	        String jsonResponse = restTemplate.getForObject(geocodeUrl, String.class);
+
+	        // Parsear el JSON de respuesta
+	        GeocodeResponseDTO responseDTO = parseGeocodeResponse(jsonResponse);
+
+	        if (responseDTO != null) {
+	            return ResponseEntity.status(HttpStatus.OK).body(responseDTO);
+	        } else {
+	            // Si no encontramos coordenadas, retornamos un error 404
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Coordinates not found.");
+	        }
+	    } catch (Exception e) {
+	        // Si ocurre un error, retornamos un error 500
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing geocoding request.");
+	    }
+	}
+	
+	
+	@GetMapping("/bookswap/userLocations")
+	public ResponseEntity<Object> getOtherUsersCoordinates(@RequestParam("currentUsername") String currentUsername) {
+	    // Obtener todos los usuarios
+	    List<User> allUsers = userRepository.findAll();
+
+	    // Filtrar al usuario actual y mapear a solo coordenadas
+	    List<Map<String, Object>> userLocations = allUsers.stream()
+	            .filter(user -> !user.getUsername().equals(currentUsername))
+	            .map(user -> {
+	                Map<String, Object> data = new HashMap<>();
+	                data.put("username", user.getUsername());
+	                data.put("lat", user.getLat());
+	                data.put("lng", user.getLng());
+	                return data;
+	            })
+	            .collect(Collectors.toList());
+
+	    return ResponseEntity.ok(userLocations);
+	}
+
+	
+	
 	@GetMapping("bookswap/userInfo")
 	public ResponseEntity<Object> userInfo(@RequestParam(value = "token") String userToken,
 	                                       @RequestParam(value = "username") String username) {
@@ -175,7 +219,7 @@ public class Controller {
 		
 	
 	
-	@PostMapping("/add_book")
+	@PostMapping("/addBook")
     public ResponseEntity<Object> addBook(@RequestBody BookDTO bookDTO) {
 		
         // Buscar el usuario por nombre de usuario (username)
@@ -203,12 +247,12 @@ public class Controller {
     }
 	
 	
-	@GetMapping("bookswap/book_ownerUsername")
+	@GetMapping("bookswap/getBooks")
 	public ResponseEntity<Object> getBooksByOwnerUsername(
 	        @RequestParam(value = "ownerUsername") String ownerUsername,
 	        @RequestParam(value = "token") String token) {
 
-	    // Validar el token
+	    // Validar el token 
 	    if (!Utilities.checkUser(tokens, token)) {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
 	    }
@@ -226,7 +270,140 @@ public class Controller {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Este usuario no tiene libros registrados");
 	    }
 
-	    return ResponseEntity.ok(books);
+	    // Limitar a máximo 5 libros
+	    List<Book> limitedBooks = books.stream().limit(5).collect(Collectors.toList());
+
+	    return ResponseEntity.ok(limitedBooks);
+	}
+
+	
+	@DeleteMapping("/bookswap/deleteBook")
+	public ResponseEntity<String> deleteBook(@RequestBody Map<String, String> requestData) {
+	    String title = requestData.get("title");
+	    String ownerUsername = requestData.get("owner_username");
+
+	    if (title == null || ownerUsername == null) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Title and owner_username are required.");
+	    }
+
+	    // Buscar el libro en la base de datos
+	    Optional<Book> bookToDelete = bookRepository.findByTitleAndOwnerUsername(title, ownerUsername);
+
+	    if (bookToDelete.isPresent()) {
+	        bookRepository.delete(bookToDelete.get());
+	        return ResponseEntity.ok("Book deleted successfully.");
+	    } else {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Book not found.");
+	    }
+	}
+	
+	@GetMapping("bookswap/getUsernames")
+	public ResponseEntity<Object> getUsers(@RequestParam("token") String token) {
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+
+	    List<User> allUsers = userRepository.findAll();
+
+	 // 
+	    List<UserDTO> usersDto = allUsers.stream()
+	        .map(user -> new UserDTO(user.getUsername()))
+	        .collect(Collectors.toList());
+
+	    // Retornar la lista de usuarios DTO
+	    return ResponseEntity.ok(usersDto);
+	}
+
+	
+	@GetMapping("bookswap/getMyExchanges")
+	public ResponseEntity<Object> getMyExchanges(
+	        @RequestParam("ownerUsername") String ownerUsername,
+	        @RequestParam("token") String token) {
+
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+
+	    Optional<User> user = userRepository.getUserByName(ownerUsername);
+	    if (user.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+	    }
+
+	    List<Exchange> exchanges = exchangeRepository.findByOwnerId(user.get().getId());
+
+	    return ResponseEntity.ok(exchanges);
+	}
+
+	
+	@PostMapping("bookswap/addExchange")
+	public ResponseEntity<Object> addExchange(
+	        @RequestBody Map<String, String> payload,
+	        @RequestParam("token") String token) {
+
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+
+	    String bookTitle = payload.get("bookTitle");
+	    String ownerName = payload.get("ownerName");
+	    String receiverName = payload.get("receiverName");
+
+	    Optional<User> owner = userRepository.getUserByName(ownerName);
+	    Optional<User> receiver = userRepository.getUserByName(receiverName);
+	    Optional<Book> book = bookRepository.getBookByTitle(bookTitle);
+
+	    if (owner.isEmpty() || receiver.isEmpty() || book.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Datos inválidos o incompletos");
+	    }
+
+	    Exchange exchange = new Exchange();
+	    exchange.setBookId(book.get().getId());
+	    exchange.setOwnerId(owner.get().getId());
+	    exchange.setReceiverId(receiver.get().getId());
+	    exchange.setStatus("pending");
+	    exchange.setExchangeDate(LocalDateTime.now());
+
+	    exchangeRepository.save(exchange);
+
+	    return ResponseEntity.ok(exchange);
+	}
+
+
+	@GetMapping("bookswap/getReceivedExchanges")
+	public ResponseEntity<Object> getReceivedExchanges(
+	        @RequestParam("receiverUsername") String receiverUsername,
+	        @RequestParam("token") String token) {
+
+	    // Validar el token
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+
+	    // Buscar al receptor por su nombre de usuario
+	    Optional<User> receiver = userRepository.getUserByName(receiverUsername);
+	    if (receiver.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+	    }
+
+	    // Obtener los intercambios donde el receiver_id sea el id del usuario y el status sea "pending"
+	    List<Exchange> exchanges = exchangeRepository.findByReceiverIdAndStatus(receiver.get().getId(), "pending");
+
+	    return ResponseEntity.ok(exchanges);
+	}
+	
+	@PutMapping("/updateExchangeStatus")
+	public ResponseEntity<?> updateExchangeStatus(@RequestBody ExchangeDTO dto) {
+	    Optional<Exchange> optionalExchange = exchangeRepository.findById(dto.getId);
+
+	    if (!optionalExchange.isPresent()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Exchange not found");
+	    }
+
+	    Exchange exchange = optionalExchange.get();
+	    exchange.setStatus(dto.getStatus());
+	    exchangeRepository.save(exchange);
+
+	    return ResponseEntity.ok("Exchange status updated successfully");
 	}
 
 	
