@@ -13,13 +13,13 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useRoute } from '@react-navigation/native';
+import Context from './Context';
 
 export default Exchanges = () => {
   const route = useRoute();
 
   const [exchanges, setExchanges] = useState([]);
   const [books, setBooks] = useState([]);
-  const [users, setUsers] = useState([]);
   const [selectedExchange, setSelectedExchange] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
@@ -27,24 +27,21 @@ export default Exchanges = () => {
   const [offeredBook, setOfferedBook] = useState('');
   const [receivedExchanges, setReceivedExchanges] = useState([]);
   const [receivedModalVisible, setReceivedModalVisible] = useState(false);
-
-  const currentUsername = 'NombreDelUsuarioActual'; // TODO: reemplazar por contexto/autenticación real
-  const token = 'TOKEN'; // TODO: token real
+  const { token, username, usersInfo, setUsersInfo } = useContext(Context);
 
   useEffect(() => {
-    fetch('http://localhost:8080/bookswap/get_exchanges')
-      .then(res => res.json())
-      .then(setExchanges)
-      .catch(console.warn);
+    fetchMyExchanges();
 
-    fetch(`http://localhost:8080/bookswap/get_books`)
-      .then(res => res.json())
+    fetch(
+      `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+    )
+      .then((res) => res.json())
       .then(setBooks)
       .catch(console.warn);
 
-    fetch(`http://localhost:8080/bookswap/get_users?token=${token}`)
-      .then(res => res.json())
-      .then(setUsers)
+    fetch(`http://localhost:8080/bookswap/getUsernames?token=${token}`)
+      .then((res) => res.json())
+      .then(setUsersInfo)
       .catch(console.warn);
   }, []);
 
@@ -55,21 +52,32 @@ export default Exchanges = () => {
     }
   }, [route.params]);
 
+  const fetchMyExchanges = () => {
+    fetch(
+      `http://localhost:8080/bookswap/getMyExchanges?ownerUsername=${username}&token=${token}`
+    )
+      .then((res) => res.json())
+      .then(setExchanges)
+      .catch(console.warn);
+  };
+
   const getBookTitle = (bookId) => {
-    const book = books.find(b => b._id === bookId);
+    const book = books.find((b) => b._id === bookId);
     return book ? book.title : 'Unknown Book';
   };
 
-  const getUser = (userId) => users.find(u => u._id === userId);
+  const getUser = (userId) => usersInfo.find((u) => u._id === userId);
 
   const fetchReceivedExchanges = async () => {
     try {
-      const response = await fetch(`http://localhost:8080/bookswap/getReceivedExchanges?receiverUsername=${currentUsername}&token=${token}`);
+      const response = await fetch(
+        `http://localhost:8080/bookswap/getReceivedExchanges?receiverUsername=${username}&token=${token}`
+      );
       const data = await response.json();
       setReceivedExchanges(data);
       setReceivedModalVisible(true);
     } catch (error) {
-      Alert.alert("Error", "No se pudieron cargar los intercambios recibidos.");
+      Alert.alert('Error', 'No se pudieron cargar los intercambios recibidos.');
     }
   };
 
@@ -80,11 +88,11 @@ export default Exchanges = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ exchangeId, status: newStatus }),
       });
-      setReceivedExchanges(prev =>
-        prev.filter(exchange => exchange._id !== exchangeId)
+      setReceivedExchanges((prev) =>
+        prev.filter((exchange) => exchange._id !== exchangeId)
       );
     } catch (err) {
-      Alert.alert("Error", "No se pudo actualizar el estado.");
+      Alert.alert('Error', 'No se pudo actualizar el estado.');
     }
   };
 
@@ -96,20 +104,23 @@ export default Exchanges = () => {
 
     const data = {
       bookTitle: offeredBook,
-      ownerName: currentUsername,
+      ownerName: username,
       receiverName: targetUser.username,
     };
 
     try {
-      const res = await fetch('http://localhost:8080/bookswap/addExchange?token=' + token, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const res = await fetch(
+        'http://localhost:8080/bookswap/addExchange?token=' + token,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }
+      );
 
       if (!res.ok) throw new Error('Failed to create exchange');
-      const newExchange = await res.json();
-      setExchanges([...exchanges, newExchange]);
+      await res.json();
+      fetchMyExchanges();
       setFormVisible(false);
       setOfferedBook('');
 
@@ -119,7 +130,7 @@ export default Exchanges = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: offeredBook,
-          owner_username: currentUsername,
+          owner_username: username,
         }),
       });
     } catch (err) {
@@ -146,7 +157,9 @@ export default Exchanges = () => {
           {receiver && (
             <>
               <Image
-                source={{ uri: `data:image/png;base64,${receiver.profilePicture}` }}
+                source={{
+                  uri: `data:image/png;base64,${receiver.profilePicture}`,
+                }}
                 style={styles.avatar}
               />
               <Text style={styles.label}>Receiver:</Text>
@@ -168,12 +181,19 @@ export default Exchanges = () => {
       />
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.createButton} onPress={() => setFormVisible(true)}>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setFormVisible(true)}>
           <Text style={styles.buttonText}>Create Exchange</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.createButton, { backgroundColor: '#2196F3', marginTop: 10 }]} onPress={fetchReceivedExchanges}>
-          <Text style={styles.buttonText}>Received Exchanges</Text>
+        <TouchableOpacity
+          style={[
+            styles.createButton,
+            { backgroundColor: '#FF9800', marginTop: 10 },
+          ]}
+          onPress={fetchReceivedExchanges}>
+          <Text style={styles.buttonText}>Pending Exchanges</Text>
         </TouchableOpacity>
       </View>
 
@@ -184,13 +204,31 @@ export default Exchanges = () => {
             {selectedExchange && (
               <>
                 <Text style={styles.modalTitle}>Exchange Details</Text>
-                <Text><Text style={styles.label}>Book:</Text> {getBookTitle(selectedExchange.book_id)}</Text>
-                <Text><Text style={styles.label}>Owner ID:</Text> {selectedExchange.owner_id}</Text>
-                <Text><Text style={styles.label}>Receiver ID:</Text> {selectedExchange.receiver_id}</Text>
-                <Text><Text style={styles.label}>Date:</Text> {new Date(selectedExchange.exchange_date).toLocaleString()}</Text>
+                <Text>
+                  <Text style={styles.label}>Book:</Text>{' '}
+                  {getBookTitle(selectedExchange.book_id)}
+                </Text>
+                <Text>
+                  <Text style={styles.label}>Owner ID:</Text>{' '}
+                  {selectedExchange.owner_id}
+                </Text>
+                <Text>
+                  <Text style={styles.label}>Receiver ID:</Text>{' '}
+                  {selectedExchange.receiver_id}
+                </Text>
+                <Text>
+                  <Text style={styles.label}>Date:</Text>{' '}
+                  {new Date(selectedExchange.exchange_date).toLocaleString()}
+                </Text>
               </>
             )}
-            <Button title="Close" onPress={() => setModalVisible(false)} />
+            <Button
+              title="Close"
+              onPress={() => {
+                setSelectedExchange(null);
+                setModalVisible(false);
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -200,7 +238,9 @@ export default Exchanges = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Exchange</Text>
-            <Text style={styles.label}>Con: {targetUser?.username || "Usuario no seleccionado"}</Text>
+            <Text style={styles.label}>
+              Con: {targetUser?.username || 'Usuario no seleccionado'}
+            </Text>
 
             <TextInput
               placeholder="Tu libro ofrecido"
@@ -209,7 +249,15 @@ export default Exchanges = () => {
               onChangeText={setOfferedBook}
             />
             <Button title="Crear" onPress={handleCreateExchange} />
-            <Button title="Cancelar" color="gray" onPress={() => setFormVisible(false)} />
+            <Button
+              title="Cancelar"
+              color="gray"
+              onPress={() => {
+                setFormVisible(false);
+                setOfferedBook('');
+                setTargetUser(null);
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -218,7 +266,7 @@ export default Exchanges = () => {
       <Modal visible={receivedModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Intercambios Recibidos</Text>
+            <Text style={styles.modalTitle}>Intercambios Pendientes</Text>
             {receivedExchanges.length === 0 ? (
               <Text>No tienes intercambios pendientes.</Text>
             ) : (
@@ -226,14 +274,30 @@ export default Exchanges = () => {
                 <View key={i} style={{ marginBottom: 10 }}>
                   <Text>{getBookTitle(ex.book_id)}</Text>
                   <Text>{new Date(ex.exchange_date).toLocaleString()}</Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Button title="Accept" onPress={() => updateExchangeStatus(ex._id, 'accepted')} />
-                    <Button title="Deny" onPress={() => updateExchangeStatus(ex._id, 'denied')} />
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                    }}>
+                    <Button
+                      title="Accept"
+                      onPress={() => updateExchangeStatus(ex._id, 'accepted')}
+                    />
+                    <Button
+                      title="Deny"
+                      onPress={() => updateExchangeStatus(ex._id, 'denied')}
+                    />
                   </View>
                 </View>
               ))
             )}
-            <Button title="Cerrar" onPress={() => setReceivedModalVisible(false)} />
+            <Button
+              title="Cerrar"
+              onPress={() => {
+                setReceivedModalVisible(false);
+                setReceivedExchanges([]);
+              }}
+            />
           </View>
         </View>
       </Modal>

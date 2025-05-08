@@ -8,6 +8,7 @@ export const Provider = ({ children }) => {
   const [picture, setPicture] = useState(null);
   const [token, setToken] = useState('');
   const [userBooks, setUserBooks] = useState([]);
+  const [usersInfo, setUsersInfo] = useState([]);
 
   return (
     <Context.Provider
@@ -20,6 +21,10 @@ export const Provider = ({ children }) => {
         setToken,
         password,
         setPassword,
+        userBooks, 
+        setUserBooks,
+        usersInfo, 
+        setUsersInfo
       }}>
       {children}
     </Context.Provider>
@@ -27,4 +32,5 @@ export const Provider = ({ children }) => {
 };
 
 export const useAppContext = () => useContext(Context);
+
 export default Context;

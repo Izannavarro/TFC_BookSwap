@@ -9,16 +9,22 @@ import {
   Image,
 } from 'react-native';
 import axios from 'axios';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { Context } from './Context';
 
 export default ChatDetail = () => {
   const route = useRoute();
-  const { chatId, userId } = route.params;
-  const { name } = useContext(Context);
+  const { name, token } = useContext(Context);
   const [messages, setMessages] = useState([]);
-  const [otherUser, setOtherUser] = useState(null);
   const [newMessage, setNewMessage] = useState('');
+  const {
+    chatId,
+    otherUsername,
+    otherUserProfilePicture,
+    receiverId,
+    senderId,
+  } = route.params;
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchMessages();
@@ -26,29 +32,21 @@ export default ChatDetail = () => {
 
   const fetchMessages = async () => {
     try {
-      const res = await axios.get(`https://tu-api.com/api/chats/${chatId}/messages`);
+      const res = await axios.get(
+        `http://localhost:8080/bookswap/getMessages?chatId=${chatId}&token=${token}`
+      );
       const msgs = res.data;
 
       setMessages(msgs);
 
-      // Determinar el otro usuario
-      if (msgs.length > 0) {
-        const sampleMsg = msgs[0];
-        const otherId =
-          sampleMsg.sender_id === userId
-            ? sampleMsg.receiver_id
-            : sampleMsg.sender_id;
-        setOtherUser(otherId);
-      }
-
-      // Marcar como vistos si hay mensajes para este usuario
       const toMarkViewed = msgs.filter(
-        (msg) => msg.receiver_id === userId && msg.status !== 'viewed'
+        (msg) => msg.receiver_id === name && msg.status !== 'viewed'
       );
 
       if (toMarkViewed.length > 0) {
-        await axios.post(`https://tu-api.com/api/chats/${chatId}/mark-viewed`, {
-          userId,
+        await axios.post(`http://localhost:8080/bookswap/markMessagesViewed`, {
+          chatId: chatId,
+          receiverId: receiverId,
         });
       }
     } catch (err) {
@@ -57,15 +55,14 @@ export default ChatDetail = () => {
   };
 
   const renderMessage = ({ item }) => {
-    const isSender = item.sender_id === userId;
+    const isSender = item.sender_id === senderId;
 
     return (
       <View
         style={[
           styles.messageBubble,
           isSender ? styles.messageRight : styles.messageLeft,
-        ]}
-      >
+        ]}>
         <Text style={styles.messageText}>{item.content}</Text>
         <View style={styles.metaInfo}>
           <Text style={styles.timestamp}>{formatTime(item.timestamp)}</Text>
@@ -74,8 +71,7 @@ export default ChatDetail = () => {
               style={{
                 color: item.status === 'viewed' ? 'blue' : 'gray',
                 marginLeft: 5,
-              }}
-            >
+              }}>
               ✓
             </Text>
           )}
@@ -93,15 +89,15 @@ export default ChatDetail = () => {
     if (newMessage.trim() === '') return;
 
     const newMsg = {
-      sender_id: userId,
-      receiver_id: otherUser,
+      chatId: chatId,
+      senderId: senderId,
+      receiverId: receiverId,
       content: newMessage,
-      timestamp: new Date().toISOString(),
-      status: 'delivered',
     };
 
     try {
-      await axios.post(`https://tu-api.com/api/chats/${chatId}/messages`, newMsg);
+      await axios.post(`http://localhost:8080/bookswap/addMessage`, newMsg);
+
       setMessages((prev) => [...prev, newMsg]);
       setNewMessage('');
     } catch (err) {
@@ -113,17 +109,30 @@ export default ChatDetail = () => {
     <View style={styles.container}>
       {/* Cabecera */}
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => {
+            setMessages([]);
+            setNewMessage('');
+            navigation.goBack();
+          }}>
+          <Text style={styles.backButton}>←</Text>
+        </TouchableOpacity>
         <Image
-          source={{ uri: `https://tu-api.com/users/${otherUser}/avatar` }}
+          source={{
+            uri:
+              otherUserProfilePicture || require('../assets/LOGO_BOOKSWAP.png'),
+          }}
           style={styles.avatar}
         />
-        <Text style={styles.headerText}>Usuario {otherUser}</Text>
+        <Text style={styles.headerText}>{otherUsername}</Text>
       </View>
 
       {/* Mensajes */}
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.message_id}
+        keyExtractor={(item, index) =>
+          item.message_id?.toString() || index.toString()
+        }
         renderItem={renderMessage}
         contentContainerStyle={{ padding: 10 }}
       />
@@ -202,5 +211,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     justifyContent: 'center',
   },
+  backButton: {
+  fontSize: 20,
+  marginRight: 10,
+},
 });
-

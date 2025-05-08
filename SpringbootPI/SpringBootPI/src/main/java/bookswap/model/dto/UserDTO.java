@@ -1,4 +1,5 @@
 public class UserDTO {
+	private String id;
     private String username;
     private String password;
     private String address;
@@ -20,11 +21,22 @@ public class UserDTO {
         this.password = password;
     }
     
-    public UserDTO(String username) {
+    public UserDTO(String id, String username, String profilePicture) {
+        this.id = id;
         this.username = username;
+        this.profilePicture = profilePicture;
     }
 
     // Getters y setters para los nuevos campos
+    
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public String getUsername() {
         return username;
     }

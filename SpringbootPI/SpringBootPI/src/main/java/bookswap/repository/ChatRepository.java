@@ -8,8 +8,8 @@ import bookswap.model.entity.Chat;
 public class ChatRepository extends MongoRepository<Chat, String>{
 	
 	// Buscar todos los chats donde un usuario es participante
-    @Query("{ 'participants': ?0 }")
-    List<Chat> findByParticipantId(String userId);
+    @Query("{ 'participant': ?0 }")
+    List<Chat> findByParticipantsContaining(String participant);
     
     // Buscar un chat específico con exactamente esos dos participantes (en cualquier orden)
     @Query("{ 'participants': { $all: [?0, ?1] } }")

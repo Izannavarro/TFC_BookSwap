@@ -1,16 +1,17 @@
-
 public class MessageInfo {
+
     private String senderId;
     private String content;
     private String timestamp;
-    
-    public MessageInfo(String senderId, String content, String timestamp) {
-    	this.senderId = senderId;
-    	this.content = content;
-    	this.timestamp = timestamp;
-    }
-    
-    public MessageInfo() {
+    private String status;
+
+    public MessageInfo() {}
+
+    public MessageInfo(String senderId, String content, String timestamp, String status) {
+        this.senderId = senderId;
+        this.content = content;
+        this.timestamp = timestamp;
+        this.status = status;
     }
 
     public String getSenderId() {
@@ -35,5 +36,13 @@ public class MessageInfo {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

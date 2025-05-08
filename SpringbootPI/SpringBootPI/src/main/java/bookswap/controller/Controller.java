@@ -1,7 +1,8 @@
-import bookswap.repository.ExchangeRepository;
-import bookswap.repository.UserRepository;
-import bookswap.repository.BookRepository;
-import bookswap.repository.ChatRepository;
+import bookswap.model.repository.ExchangeRepository;
+import bookswap.model.repository.UserRepository;
+import bookswap.model.repository.BookRepository;
+import bookswap.model.repository.ChatRepository;
+import bookswap.model.repository.MessageRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,8 +48,7 @@ import bookswap.model.entity.Message;
 import bookswap.model.entity.GeocodeResponse;
 import bookswap.model.entity.GeocodeResult;
 import bookswap.model.entity.GeocodeService;
-
-import bookswap.utils.Utilities;
+import bookswap.model.Utilities;
 
 
 @RestController
@@ -90,14 +90,19 @@ public class Controller {
 	@Autowired
 	private BookRepository bookRepository;
 	
-	
+	/**
+	 * Repository where the queries that interact with the message collection are
+	 * stored
+	 */
+	@Autowired
+	private MessageRepository messageRepository;
 	
 	/**
 	 * @param userDTO Object with the new user's username and password
 	 * @return HttpStatus NOT_FOUND if the user is not present, or HttpStatus OK if
 	 *         user is found and credentials match
 	 */
-	@PostMapping("imgini/login")
+	@PostMapping("bookswap/login")
 	public ResponseEntity<Object> login(@RequestBody UserDTO userDTO) {
 		String passwordHash = DigestUtils.sha256Hex(userDTO.getPassword());
 		Optional<User> user = userRepository.findByUserAndPassword(userDTO.getUsername(), passwordHash);
@@ -112,7 +117,7 @@ public class Controller {
 	}
 	
 	
-	@PostMapping("imgini/register")
+	@PostMapping("bookswap/register")
 	public ResponseEntity<Object> register(@RequestBody UserDTO userDTO) {
 	    String passwordHash = DigestUtils.sha256Hex(userDTO.getPassword());
 
@@ -140,7 +145,7 @@ public class Controller {
 	    }
 	}
 	
-	@GetMapping("/bookswap/geocode")
+	@GetMapping("bookswap/geocode")
 	public ResponseEntity<Object> getCoordinates(@RequestParam("address") String address) {
 	    try {
 	        // Crea la URL de Google Geocoding API
@@ -204,7 +209,7 @@ public class Controller {
 	    }
 
 	    // Obtener libros disponibles del usuario
-	    List<Book> availableBooks = bookRepository.findByOwnerAndAvailableTrue(username);
+	    List<Book> availableBooks = bookRepository.findByOwnerUsername(username);
 
 	    // Construir objeto UserInfo (adaptado a tu clase)
 	    UserInfo userInfo = new UserInfo(
@@ -219,7 +224,7 @@ public class Controller {
 		
 	
 	
-	@PostMapping("/addBook")
+	@PostMapping("bookswap/addBook")
     public ResponseEntity<Object> addBook(@RequestBody BookDTO bookDTO) {
 		
         // Buscar el usuario por nombre de usuario (username)
@@ -277,7 +282,7 @@ public class Controller {
 	}
 
 	
-	@DeleteMapping("/bookswap/deleteBook")
+	@DeleteMapping("bookswap/deleteBook")
 	public ResponseEntity<String> deleteBook(@RequestBody Map<String, String> requestData) {
 	    String title = requestData.get("title");
 	    String ownerUsername = requestData.get("owner_username");
@@ -297,7 +302,7 @@ public class Controller {
 	    }
 	}
 	
-	@GetMapping("bookswap/getUsernames")
+	@GetMapping("bookswap/getUsersInfo")
 	public ResponseEntity<Object> getUsers(@RequestParam("token") String token) {
 	    if (!Utilities.checkUser(tokens, token)) {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
@@ -305,11 +310,10 @@ public class Controller {
 
 	    List<User> allUsers = userRepository.findAll();
 
-	 // 
 	    List<UserDTO> usersDto = allUsers.stream()
-	        .map(user -> new UserDTO(user.getUsername()))
+	        .map(user -> new UserDTO(user.getId(), user.getUsername(), user.getProfilePicture()))
 	        .collect(Collectors.toList());
-
+	    
 	    // Retornar la lista de usuarios DTO
 	    return ResponseEntity.ok(usersDto);
 	}
@@ -379,7 +383,6 @@ public class Controller {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
 	    }
 
-	    // Buscar al receptor por su nombre de usuario
 	    Optional<User> receiver = userRepository.getUserByName(receiverUsername);
 	    if (receiver.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
@@ -391,7 +394,7 @@ public class Controller {
 	    return ResponseEntity.ok(exchanges);
 	}
 	
-	@PutMapping("/updateExchangeStatus")
+	@PutMapping("bookswap/updateExchangeStatus")
 	public ResponseEntity<?> updateExchangeStatus(@RequestBody ExchangeDTO dto) {
 	    Optional<Exchange> optionalExchange = exchangeRepository.findById(dto.getId);
 
@@ -405,6 +408,149 @@ public class Controller {
 
 	    return ResponseEntity.ok("Exchange status updated successfully");
 	}
+	
+	
+	@GetMapping("bookswap/getChats")
+	public ResponseEntity<Object> getUserChats(@RequestParam("username") String username
+			, @RequestParam("token") String token) {
+		
+		// Validar el token
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+		
+	    List<Chat> chats = chatRepository.findByParticipantsContaining(username);
 
+	    List<Map<String, Object>> chatList = chats.stream().map(chat -> {
+	        Map<String, Object> result = new HashMap<>();
+	        result.put("_id", chat.getId());
+	        result.put("participants", chat.getParticipants());	
+	        return result;
+	    }).collect(Collectors.toList());
+
+	    return ResponseEntity.ok(chatList);
+	}
+
+
+	@GetMapping("/bookswap/getMessages")
+	public ResponseEntity<List<MessageInfo>> getMessages(
+	        @RequestParam String chatId, 
+	        @RequestParam("token") String token) {
+
+	    // Validar el token
+	    if (!Utilities.checkUser(tokens, token)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
+	    }
+	    
+	    List<Message> messages = messageRepository.findByChatIdOrderByTimestampAsc(chatId);
+
+	    List<MessageInfo> messageInfos = messages.stream()
+	        .map(msg -> new MessageInfo(
+	            msg.getSender_id(),
+	            msg.getContent(),
+	            msg.getTimestamp(),
+	            msg.getStatus()
+	        ))
+	        .collect(Collectors.toList());
+
+	    return ResponseEntity.ok(messageInfos);
+	}
+
+	
+	@PostMapping("/bookswap/addMessage")
+	public ResponseEntity<String> addMessage(@RequestBody MessageDTO messageDTO) {
+	    Message message = new Message();
+	    message.setMessage_id(UUID.randomUUID().toString());
+	    message.setSender_id(messageDTO.getSenderId());
+	    message.setReceiver_id(messageDTO.getReceiverId());
+	    message.setContent(messageDTO.getContent());
+	    message.setTimestamp(LocalDateTime.now().toString());
+	    message.setStatus("delivered");
+	    message.setChatId(messageDTO.getChatId());
+
+	    messageRepository.save(message);
+	    return ResponseEntity.ok("Message added");
+	}
+
+	
+	@PostMapping("/bookswap/markMessagesViewed")
+	public ResponseEntity<String> markMessagesAsViewed(@RequestBody Map<String, String> body) {
+	    String chatId = body.get("chatId");
+	    String receiverId = body.get("receiverId");
+
+	    List<Message> messages = messageRepository.findByChatIdAndReceiverIdAndStatus(chatId, receiverId, "delivered");
+	    for (Message msg : messages) {
+	        msg.setStatus("viewed");
+	    }
+	    messageRepository.saveAll(messages);
+	    return ResponseEntity.ok("Messages marked as viewed");
+	}
+
+	
+	
+	@PutMapping("bookswap/updateUser")
+	public ResponseEntity<String> updateUser(@RequestParam(value = "token") String userToken,
+			@RequestBody UserPUT updatedUser) {
+		if (!Utilities.checkUser(tokens, userToken)) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+
+		Optional<User> userOptional = userRepository.getUserByName(updatedUser.getOldName());
+		if (userOptional.isPresent()) {
+			String passwordHash = DigestUtils.sha256Hex(updatedUser.getPassword());
+			User user = userOptional.get();
+			user.setUsername(updatedUser.getNewName());
+			user.setPassword(passwordHash);
+			user.setProfilePicture(updatedUser.getProfilePicture());
+
+			userRepository.save(user);
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		} else {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+	}
+	
+	
+	/**
+	 * @param userToken Token that will authenticate the user
+	 * @return Nothing, HTTPStatus NO_CONTENT if successfully logged out, or
+	 *         HTTPStatus NOT_FOUND if couldn't find user
+	 */
+	@GetMapping("bookswap/logout")
+	public ResponseEntity<Object> logout(@RequestParam(value = "token") String userToken) {
+		try {
+			tokens.remove(Utilities.findToken(tokens, userToken));
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+	}
+	
+	
+	/**
+	 * @param name      String Name of the user to be deleted
+	 * @param password  String Password of the user to be deleted
+	 * @param userToken Token that will authenticate the user
+	 * @return HttpStatus NOT_FOUND if the user couldn't be found, or HttpStatus
+	 *         NO_CONTENT if user and their attempts have been deleted successfully
+	 */
+	@DeleteMapping("bookswap/deleteAccount")
+	public ResponseEntity<String> deleteAccount(@RequestParam(value = "name") String name,
+			@RequestParam(value = "password") String password, @RequestParam(value = "token") String userToken) {
+		if (!Utilities.checkUser(tokens, userToken)) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+		}
+
+		String passwordHash = DigestUtils.sha256Hex(password);
+		Optional<User> user = userRepository.findByUserAndPassword(name, passwordHash);
+		if (user.isPresent()) {
+			userRepository.delete(user.get());
+			tokens.remove(Utilities.findToken(tokens, userToken));
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		} else {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		}
+	}
 	
 }

@@ -12,7 +12,7 @@ import { useEffect, useState, useContext } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
-import Context from './Context'; // Ajusta la ruta si es diferente
+import Context from './Context'; 
 
 export default function Home() {
   const [location, setLocation] = useState(null);
@@ -25,18 +25,25 @@ export default function Home() {
   const { token, username } = useContext(Context);
 
   useEffect(() => {
-    Geolocation.requestAuthorization('whenInUse').then(() => {
+  const requestAndFetchLocation = async () => {
+    const granted = await Geolocation.requestAuthorization('whenInUse');
+    if (granted === 'granted') {
       Geolocation.getCurrentPosition(
         (pos) => setLocation(pos.coords),
         (err) => console.warn(err.message),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
-    });
+    } else {
+      Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación.');
+    }
+  };
 
-    fetchUserCoordinates();
-  }, []);
+  requestAndFetchLocation();
+  fetchUserCoordinates();
+}, []);
 
-  useEffect(() => {
+
+  useEffect(() => {   
     if (!isFocused) {
       setSelectedUser(null);
       setUserModalVisible(false);
@@ -46,10 +53,7 @@ export default function Home() {
   const fetchUserCoordinates = async () => {
     try {
       const res = await axios.get(
-        'http://localhost:8080/bookswap/user_locations',
-        {
-          params: { username },
-        }
+        `http://localhost:8080/bookswap/user_locations?username=${username}`
       );
       setUserMarkers(res.data);
     } catch (error) {
@@ -61,9 +65,7 @@ export default function Home() {
     setSelectedUser(null);
 
     try {
-      const res = await axios.get('http://localhost:8080/bookswap/userInfo', {
-        params: { name, token },
-      });
+      const res = await axios.get(`http://localhost:8080/bookswap/userInfo?token=${token}&username=${name}`);
       setSelectedUser(res.data);
       setUserModalVisible(true);
     } catch (error) {

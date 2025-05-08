@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,17 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Context from './Context';
+import axios from 'axios';
 
 const Settings = () => {
-  const {
-    name,
-    password,
-    setToken,
-    setName,
-    setPassword,
-  } = useContext(Context);
+  const { name, password, token, setToken, setName, setPassword } = useContext(Context);
   const navigation = useNavigation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -29,77 +26,137 @@ const Settings = () => {
   const [editedPassword, setEditedPassword] = useState(password);
   const [avatarUri, setAvatarUri] = useState('https://i.pravatar.cc/150?img=3');
 
-  const handleLogout = () => {
-    setToken(null);
-    setName('');
-    setPassword('');
-    navigation.navigate('Login');
+  useEffect(() => {
+    setEditedName(name);
+    setEditedPassword(password);
+  }, [name, password]);
+
+  const handleLogout = async () => {
+    try {
+      await axios.get(`http://localhost:8080/bookswap/logout?token=${token}`);
+    } catch (err) {
+      console.warn('Logout fallido:', err);
+    } finally {
+      setToken(null);
+      setName('');
+      setPassword('');
+      navigation.navigate('Login');
+    }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, delete it',
-          style: 'destructive',
-          onPress: () => {
-            setToken(null);
-            setName('');
-            setPassword('');
-            navigation.navigate('Login');
-          },
+    Alert.alert('Eliminar cuenta', '¿Estás seguro de que quieres eliminar tu cuenta?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sí, eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const res = await axios.delete('http://localhost:8080/bookswap/deleteAccount', {
+              params: { name, password, token },
+            });
+
+            if (res.status === 204) {
+              setToken(null);
+              setName('');
+              setPassword('');
+              navigation.navigate('Login');
+            } else {
+              Alert.alert('Error', 'No se pudo eliminar la cuenta.');
+            }
+          } catch (err) {
+            console.error('Error al eliminar cuenta:', err);
+            Alert.alert('Error', 'Fallo al eliminar la cuenta.');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const handleUpdate = () => {
-    setIsEditing(true);
-    Alert.alert(
-      'Change Photo',
-      'Choose a method to update your profile photo:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Camera',
-          onPress: () => {
-            launchCamera({ mediaType: 'photo' }, (response) => {
-              if (response.assets && response.assets[0]) {
-                setAvatarUri(response.assets[0].uri);
-              }
-            });
-          },
-        },
-        {
-          text: 'Gallery',
-          onPress: () => {
-            launchImageLibrary({ mediaType: 'photo' }, (response) => {
-              if (response.assets && response.assets[0]) {
-                setAvatarUri(response.assets[0].uri);
-              }
-            });
-          },
-        },
-      ]
-    );
+  const requestPermissions = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      ]);
+      return (
+        granted['android.permission.CAMERA'] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    }
+    return true; // iOS pide permisos automáticamente
   };
 
-  const handleSave = () => {
-    setName(editedName);
-    setPassword(editedPassword);
-    setIsEditing(false);
-    Alert.alert('Updated', 'Your profile has been updated.');
+  const handleImageSelection = async () => {
+    const granted = await requestPermissions();
+    if (!granted) {
+      Alert.alert('Permisos requeridos', 'Se necesitan permisos para acceder a la cámara o galería.');
+      return;
+    }
+
+    Alert.alert('Cambiar foto', 'Selecciona el origen de la imagen', [
+      {
+        text: 'Cámara',
+        onPress: () => {
+          launchCamera({ mediaType: 'photo' }, (response) => {
+            if (response.assets && response.assets[0]) {
+              setAvatarUri(response.assets[0].uri);
+            }
+          });
+        },
+      },
+      {
+        text: 'Galería',
+        onPress: () => {
+          launchImageLibrary({ mediaType: 'photo' }, (response) => {
+            if (response.assets && response.assets[0]) {
+              setAvatarUri(response.assets[0].uri);
+            }
+          });
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
+
+  const handleSave = async () => {
+    if (
+      editedName === name &&
+      editedPassword === password &&
+      avatarUri === 'https://i.pravatar.cc/150?img=3'
+    ) {
+      Alert.alert('Sin cambios', 'No se han realizado cambios en tu perfil.');
+      return;
+    }
+
+    try {
+      const res = await axios.put(
+        `http://localhost:8080/bookswap/updateUser?token=${token}`,
+        {
+          oldName: name,
+          newName: editedName,
+          password: editedPassword,
+          profilePicture: avatarUri,
+          extension: avatarUri.split('.').pop(),
+        }
+      );
+
+      if (res.status === 204) {
+        setName(editedName);
+        setPassword(editedPassword);
+        setIsEditing(false);
+        Alert.alert('Actualizado', 'Tu perfil ha sido actualizado.');
+      }
+    } catch (err) {
+      console.error('Error actualizando usuario:', err);
+      Alert.alert('Error', 'No se pudo actualizar tu perfil.');
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity disabled={!isEditing} onPress={handleUpdate}>
-          <Image source={{ uri: avatarUri }} style={styles.avatar} />
-        </TouchableOpacity>
+        <Image source={{ uri: avatarUri }} style={styles.avatar} />
         <View style={styles.userInfo}>
           <View style={styles.inputRow}>
             <Icon name="person-outline" size={20} color="#888" />
@@ -108,7 +165,7 @@ const Settings = () => {
               value={editedName}
               onChangeText={setEditedName}
               editable={isEditing}
-              placeholder="Name"
+              placeholder="Nombre"
             />
           </View>
           <View style={styles.inputRow}>
@@ -119,17 +176,28 @@ const Settings = () => {
               onChangeText={setEditedPassword}
               editable={isEditing}
               secureTextEntry
-              placeholder="Password"
+              placeholder="Contraseña"
             />
           </View>
         </View>
+      </View>
+
+      {isEditing && (
+        <TouchableOpacity style={styles.pictureButton} onPress={handleImageSelection}>
+          <Text style={styles.pictureButtonText}>Actualizar foto de perfil</Text>
+        </TouchableOpacity>
+      )}
+
+      <View style={styles.editSection}>
         {!isEditing ? (
-          <TouchableOpacity style={styles.editButton} onPress={handleUpdate}>
+          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
             <Icon name="create-outline" size={20} color="#007bff" />
+            <Text style={styles.editButtonText}>Editar perfil</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.editButton} onPress={handleSave}>
-            <Icon name="checkmark-done-outline" size={20} color="#28a745" />
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Icon name="checkmark-done-outline" size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>Guardar cambios</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -139,17 +207,17 @@ const Settings = () => {
 
         <TouchableOpacity style={styles.item} onPress={handleLogout}>
           <Icon name="log-out-outline" size={20} color="#555" />
-          <Text style={styles.itemText}>Log out</Text>
+          <Text style={styles.itemText}>Cerrar sesión</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.item} onPress={handleDeleteAccount}>
           <Icon name="trash-outline" size={20} color="red" />
-          <Text style={[styles.itemText, { color: 'red' }]}>Delete Account</Text>
+          <Text style={[styles.itemText, { color: 'red' }]}>Eliminar cuenta</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Privacy</Text>
+        <Text style={styles.sectionTitle}>Privacidad</Text>
         <Text style={styles.policyText}>
           En BookSwap respetamos tu privacidad. Tus datos personales no serán compartidos con terceros y puedes solicitar su eliminación en cualquier momento.
         </Text>
@@ -163,28 +231,81 @@ export default Settings;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
     padding: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 36,
     marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#007bff',
   },
   userInfo: {
     flex: 1,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomColor: '#ccc',
+    borderBottomWidth: 1,
+    marginBottom: 8,
+    paddingBottom: 4,
+  },
+  input: {
+    marginLeft: 8,
+    fontSize: 16,
+    flex: 1,
+    color: '#333',
+  },
+  pictureButton: {
+    backgroundColor: '#e9ecef',
+    padding: 10,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  pictureButtonText: {
+    fontSize: 14,
+    color: '#007bff',
+  },
+  editSection: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
   editButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderColor: '#007bff',
+    borderWidth: 1,
+  },
+  editButtonText: {
+    marginLeft: 8,
+    color: '#007bff',
+    fontWeight: '600',
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#28a745',
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    marginLeft: 8,
+    color: '#fff',
+    fontWeight: '600',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 16,
@@ -209,19 +330,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#666',
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    marginBottom: 8,
-    paddingBottom: 4,
-  },
-  input: {
-    marginLeft: 8,
-    fontSize: 16,
-    flex: 1,
-    color: '#333',
   },
 });

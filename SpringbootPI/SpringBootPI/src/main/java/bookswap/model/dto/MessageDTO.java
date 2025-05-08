@@ -1,21 +1,17 @@
-
 public class MessageDTO {
-	
-	private String chatId;
+
+    private String chatId;
     private String senderId;
     private String receiverId;
     private String content;
-    private String timestamp;
-    
-    public MessageDTO(String chatId, String senderId, String receiverId, String content, String timestamp) {
-    	this.chatId = chatId;
-    	this.senderId = senderId;
-    	this.receiverId = receiverId;
-    	this.content = content;
-    	this.timestamp = timestamp;
-    }
-    
-    public MessageDTO() {
+
+    public MessageDTO() {}
+
+    public MessageDTO(String chatId, String senderId, String receiverId, String content) {
+        this.chatId = chatId;
+        this.senderId = senderId;
+        this.receiverId = receiverId;
+        this.content = content;
     }
 
     public String getChatId() {
@@ -49,7 +45,7 @@ public class MessageDTO {
     public void setContent(String content) {
         this.content = content;
     }
-    
+
     public String getTimestamp() {
         return timestamp;
     }
