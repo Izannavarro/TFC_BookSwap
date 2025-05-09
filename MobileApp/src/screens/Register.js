@@ -3,69 +3,89 @@ import { useState, useEffect, useContext } from 'react';
 import { TextInput } from 'react-native-paper';
 import Context from './Context';
 import * as Font from 'expo-font';
+import logo from '../assets/LOGO_BOOKSWAP.png';
 
 export default function Register({ navigation }) {
-  const { name, setName, password, setPassword, setToken, setUserId, theme } = useContext(Context);
+  const { setUsername,  setPassword, setToken, setPicture } = useContext(Context);
   const [textName, setTextName] = useState('');
+  const [textPwd, setTextPwd] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [address, setAddress] = useState('');
+  
 
   const toMain = () => {
+    setTextPwd('');
+    setTextName('');
+    setAddress('');
     navigation.navigate('Main');
   };
 
   const toApp = async () => {
-    if (!textName || !password || !address) {
-      alert('Username, password, and address cannot be empty.');
+  if (!textName || !password || !address) {
+    alert('Username, password, and address cannot be empty.');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert('Passwords must be the same.');
+    return;
+  }
+
+  try {
+    // Paso 1: Validar dirección usando el backend
+    const geoResponse = await fetch(
+      `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
+    );
+
+    if (!geoResponse.ok) {
+      if (geoResponse.status === 404) {
+        alert('La dirección ingresada no es válida o está mal estructurada.');
+      } else {
+        alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
+      }
       return;
     }
-    if (password !== confirmPassword) {
-      alert('Passwords must be the same.');
+
+    const geoData = await geoResponse.json();
+    if (!geoData.lat || !geoData.lng) {
+      alert('No se pudieron obtener las coordenadas de la dirección.');
       return;
     }
 
-    try {
-      // Get coordinates from the address via backend
-      const geoResponse = await fetch(`http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`);
-      const geoData = await geoResponse.json();
+    // Paso 2: Crear usuario
+    const response = await fetch('http://localhost:8080/bookswap/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: textName,
+        password,
+        profilePicture: await imageToBase64(Image.resolveAssetSource(logo).uri),
+        address,
+        lat: geoData.lat,
+        lng: geoData.lng,
+      }),
+    });
 
-      if (!geoData || !geoData.lat || !geoData.lng) {
-        alert('Failed to get coordinates from the address.');
-        return;
-      }
-
-      // Now we register the user
-      const response = await fetch('http://localhost:8080/bookswap/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: textName, password, address, lat: geoData.lat, lng: geoData.lng }),
-      });
-
-      const responseText = await response.text();
-      if (!response.ok) {
-        alert('Authentication error.');
-        return;
-      }
-
-      setToken(responseText);
-      setName(textName);
-
-      const response2 = await fetch(
-        `http://localhost:8080/bookswap/userInfo?token=${responseText}&username=${textName}`
-      );
-      if (response2.ok) {
-        const result = await response2.json();
-        setUserId(result.id);
-      }
-
-      navigation.navigate('LoadingScreen');
-    } catch (error) {
-      console.error(error);
+    const responseText = await response.text();
+    if (!response.ok) {
+      alert('Error al registrar usuario. Verifica los datos.');
+      return;
     }
-  };
+
+    setToken(responseText);
+    setUsername(textName);
+    setPassword(textPwd);
+    setPicture(Image.resolveAssetSource(logo).uri);
+
+    navigation.navigate('LoadingScreen');
+  } catch (error) {
+    console.error(error);
+    alert('Error de red o del servidor. Intenta nuevamente.');
+  }
+};
 
   return (
     <ImageBackground
@@ -88,8 +108,8 @@ export default function Register({ navigation }) {
           <TextInput
             placeholder="Password"
             placeholderTextColor="#555"
-            value={password}
-            onChangeText={setPassword}
+            value={textPwd}
+            onChangeText={setTextPwd}
             secureTextEntry={!passwordVisible}
             right={
               <TextInput.Icon

@@ -97,6 +97,10 @@ public class Controller {
 	@Autowired
 	private MessageRepository messageRepository;
 	
+	
+	@Autowired
+	private GeocodeService geocodeService;
+	
 	/**
 	 * @param userDTO Object with the new user's username and password
 	 * @return HttpStatus NOT_FOUND if the user is not present, or HttpStatus OK if
@@ -129,8 +133,8 @@ public class Controller {
 	        User newUser = new User(
 	            userDTO.getUsername(),
 	            passwordHash,
-	            userDTO.getAddress(),
 	            userDTO.getProfilePicture(),
+	            userDTO.getAddress(),
 	            userDTO.getLat(),
 	            userDTO.getLng()
 	        );
@@ -157,7 +161,7 @@ public class Controller {
 	        String jsonResponse = restTemplate.getForObject(geocodeUrl, String.class);
 
 	        // Parsear el JSON de respuesta
-	        GeocodeResponseDTO responseDTO = parseGeocodeResponse(jsonResponse);
+	        GeocodeResponseDTO responseDTO = geocodeService.parseGeocodeResponse(jsonResponse);
 
 	        if (responseDTO != null) {
 	            return ResponseEntity.status(HttpStatus.OK).body(responseDTO);
@@ -177,17 +181,15 @@ public class Controller {
 	    // Obtener todos los usuarios
 	    List<User> allUsers = userRepository.findAll();
 
-	    // Filtrar al usuario actual y mapear a solo coordenadas
-	    List<Map<String, Object>> userLocations = allUsers.stream()
-	            .filter(user -> !user.getUsername().equals(currentUsername))
-	            .map(user -> {
-	                Map<String, Object> data = new HashMap<>();
-	                data.put("username", user.getUsername());
-	                data.put("lat", user.getLat());
-	                data.put("lng", user.getLng());
-	                return data;
-	            })
-	            .collect(Collectors.toList());
+	    List<UserDTO> userLocations = allUsers.stream()
+	    	    .filter(user -> !user.getUsername().equals(currentUsername))
+	    	    .map(user -> new UserDTO(
+	    	        user.getUsername(),
+	    	        user.getLat(),
+	    	        user.getLng(),
+	    	        user.getAddress()
+	    	    ))
+	    	    .collect(Collectors.toList());
 
 	    return ResponseEntity.ok(userLocations);
 	}
@@ -203,25 +205,22 @@ public class Controller {
 	    }
 
 	    // Buscar usuario por nombre
-	    Optional<User> user = userRepository.getUserByName(username);
-	    if (user.isEmpty()) {
+	    Optional<User> optionalUser = userRepository.getUserByName(username);
+	    if (optionalUser.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 	    }
 
-	    // Obtener libros disponibles del usuario
-	    List<Book> availableBooks = bookRepository.findByOwnerUsername(username);
+	    User user = optionalUser.get();
 
-	    // Construir objeto UserInfo (adaptado a tu clase)
+	    // Construir el DTO UserInfo
 	    UserInfo userInfo = new UserInfo(
-	        user.get().getUsername(),
-	        availableBooks,
-	        user.get().getAddress()
+	        user.getUsername(),
+	        user.getAddress(),
+	        user.getProfilePicture()
 	    );
-	    userInfo.setProfilePicture(user.get().getProfilePicture());
 
-	    return ResponseEntity.status(HttpStatus.OK).body(userInfo);
+	    return ResponseEntity.ok(userInfo);
 	}
-		
 	
 	
 	@PostMapping("bookswap/addBook")

@@ -4,6 +4,7 @@ import { TextInput } from 'react-native-paper';
 import Context from './Context';
 import * as Font from 'expo-font';
 import toImageUri from '../utilities/toImageUri';
+import logo from '../assets/LOGO_BOOKSWAP.png';
 
 export default function Login({ navigation }) {
   const {
@@ -11,9 +12,12 @@ export default function Login({ navigation }) {
     setUsername,
     password,
     setPassword,
+    token,
+    setToken,
+    setPicture,
   } = useContext(Context);
-
-  // const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [textName, setTextName] = useState('');
+  const [textPwd, setTextPwd] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const toApp = async () => {
@@ -23,32 +27,32 @@ export default function Login({ navigation }) {
     }
 
     try {
-      // const response = await fetch('http://localhost:8080/bookswap/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ username: name, password }),
-      // });
+      const response = await fetch('http://localhost:8080/bookswap/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: textName , password: textPwd }),
+      });
 
-      // if (!response.ok) {
-      //   Alert.alert('Error en la autenticación');
-      //   return;
-      // }
+      if (!response.ok) {
+        Alert.alert('Error en la autenticación');
+        return;
+      }
 
-      // const token = await response.text();
-      // setToken(token);
+      const tokenResponse = await response.text();
+      setToken(tokenResponse);
+      setUsername(textName);
+      setPassword(textPwd);
 
-      // const response2 = await fetch(
-      //   `http://localhost:8080/bookswap/userInfo?token=${token}&username=${name}`
-      // );
+      const response2 = await fetch(
+        `http://localhost:8080/bookswap/userInfo?token=${tokenResponse}&username=${textName}`
+      );
 
-      // if (response2.ok) {
-      //   const result = await response2.json();
-      //   setUserId(result.id);
-      //   setPoints(result.points);
-      //   result.profilePicture
-      //     ? setPicture(toImageUri(result.profilePicture, result.extension))
-      //     : setPicture(null);
-      // }
+      if (response2.ok) {
+        const result = await response2.json();
+        result.profilePicture
+          ? setPicture(toImageUri(result.profilePicture, "png"))
+          : setPicture(Image.resolveAssetSource(logo).uri);
+      }
 
       navigation.navigate('LoadingScreen');
     } catch (error) {
@@ -57,21 +61,10 @@ export default function Login({ navigation }) {
   };
 
   const toMain = () => {
-    setUsername('');
+    setTextName('');
+    setTextPwd('');
     navigation.navigate('Main');
   };
-
-  // useEffect(() => {
-  //   const loadFonts = async () => {
-  //     await Font.loadAsync({
-  //       'alegraya-sans': require('../assets/fonts/AlegreyaSansSC-Regular.ttf'),
-  //     });
-  //     setFontsLoaded(true);
-  //   };
-  //   if (!fontsLoaded) loadFonts();
-  // }, [fontsLoaded]);
-
-  // if (!fontsLoaded) return null;
 
   return (
     <ImageBackground
@@ -87,16 +80,16 @@ export default function Login({ navigation }) {
           <TextInput
             label="Usuario"
             mode="flat"
-            value={username}
-            onChangeText={setUsername}
+            value={textName}
+            onChangeText={setTextName}
             style={styles.input}
             theme={{ colors: { text: '#000', primary: '#96cf24' } }}
           />
           <TextInput
             label="Contraseña"
             mode="flat"
-            value={password}
-            onChangeText={setPassword}
+            value={textPwd}
+            onChangeText={setTextPwd}
             secureTextEntry={!passwordVisible}
             style={styles.input}
             theme={{ colors: { text: '#000', primary: '#96cf24' } }}

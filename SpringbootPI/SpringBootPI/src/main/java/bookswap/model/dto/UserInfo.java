@@ -2,20 +2,19 @@ import java.util.List;
 
 public class UserInfo {
     private String username;
-    private List<Book> availableBooks;
     private String address;
     private String profilePicture;
 
     // Constructor con parámetros
-    public UserInfo( String username, List<Book> availableBooks, String address) {
+    public UserInfo( String username, String address, String profilePicture) {
         this.username = username;
-        this.availableBooks = availableBooks;
         this.address = address;
         this.profilePicture = profilePicture;
     }
 
     // Constructor vacío
     public UserInfo() {
+    	
     }
 
     // Getters y setters
@@ -27,15 +26,7 @@ public class UserInfo {
     public void setUsername(String username) {
         this.username = username;
     }
-
-    public List<Book> getAvailableBooks() {
-        return availableBooks;
-    }
-
-    public void setAvailableBooks(List<Book> availableBooks) {
-        this.availableBooks = availableBooks;
-    }
-
+    
     public String getAddress() {
         return address;
     }

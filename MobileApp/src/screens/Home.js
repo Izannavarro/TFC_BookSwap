@@ -12,7 +12,7 @@ import { useEffect, useState, useContext } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
-import Context from './Context'; 
+import Context from './Context';
 
 export default function Home() {
   const [location, setLocation] = useState(null);
@@ -22,28 +22,27 @@ export default function Home() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const { token, username } = useContext(Context);
+  const { token, username, picture } = useContext(Context);
 
   useEffect(() => {
-  const requestAndFetchLocation = async () => {
-    const granted = await Geolocation.requestAuthorization('whenInUse');
-    if (granted === 'granted') {
-      Geolocation.getCurrentPosition(
-        (pos) => setLocation(pos.coords),
-        (err) => console.warn(err.message),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-      );
-    } else {
-      Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación.');
-    }
-  };
+    const requestAndFetchLocation = async () => {
+      const granted = await Geolocation.requestAuthorization('whenInUse');
+      if (granted === 'granted') {
+        Geolocation.getCurrentPosition(
+          (pos) => setLocation(pos.coords),
+          (err) => console.warn(err.message),
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+      } else {
+        Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación.');
+      }
+    };
 
-  requestAndFetchLocation();
-  fetchUserCoordinates();
-}, []);
+    requestAndFetchLocation();
+    fetchUserCoordinates();
+  }, []);
 
-
-  useEffect(() => {   
+  useEffect(() => {
     if (!isFocused) {
       setSelectedUser(null);
       setUserModalVisible(false);
@@ -53,7 +52,7 @@ export default function Home() {
   const fetchUserCoordinates = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/bookswap/user_locations?username=${username}`
+        `http://localhost:8080/bookswap/userLocations?username=${username}`
       );
       setUserMarkers(res.data);
     } catch (error) {
@@ -62,10 +61,15 @@ export default function Home() {
   };
 
   const handleMarkerPress = async (name) => {
-    setSelectedUser(null);
+    if (selectedUser && selectedUser.username === name) {
+      setUserModalVisible(true);
+      return;
+    }
 
     try {
-      const res = await axios.get(`http://localhost:8080/bookswap/userInfo?token=${token}&username=${name}`);
+      const res = await axios.get(
+        `http://localhost:8080/bookswap/userInfo?token=${token}&username=${name}`
+      );
       setSelectedUser(res.data);
       setUserModalVisible(true);
     } catch (error) {
@@ -83,7 +87,7 @@ export default function Home() {
         />
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image
-            source={require('../assets/LOGO_BOOKSWAP.png')}
+            source={{ uri: picture }}
             style={styles.avatar}
           />
         </TouchableOpacity>
@@ -133,24 +137,22 @@ export default function Home() {
           }}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Image
-                source={{
-                  uri: `data:image/png;base64,${selectedUser.profilePicture}`,
-                }}
-                style={styles.modalImage}
-              />
-              <Text style={styles.modalTitle}>{selectedUser.username}</Text>
-              <Text style={styles.modalText}>{selectedUser.address}</Text>
-              <Text style={styles.modalSubtitle}>Libros disponibles:</Text>
-              {selectedUser.availableBooks.length > 0 ? (
-                selectedUser.availableBooks.map((book, i) => (
-                  <Text key={i} style={styles.modalBook}>
-                    {book.title}
-                  </Text>
-                ))
+              {selectedUser.profilePicture ? (
+                <Image
+                  source={{
+                    uri: `data:image/png;base64,${selectedUser.profilePicture}`,
+                  }}
+                  style={styles.modalImage}
+                />
               ) : (
-                <Text style={styles.modalBook}>No hay libros disponibles</Text>
+                <Text style={styles.modalText}>Sin imagen de perfil</Text>
               )}
+              <Text style={styles.modalTitle}>
+                {selectedUser.username || 'Sin nombre'}
+              </Text>
+              <Text style={styles.modalText}>
+                {selectedUser.address || 'Sin dirección'}
+              </Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => {
@@ -231,14 +233,14 @@ const styles = StyleSheet.create({
   },
   closeButtonText: { fontWeight: 'bold', color: '#fff' },
   exchangeButton: {
-  marginTop: 10,
-  padding: 10,
-  backgroundColor: '#a0c4ff',
-  borderRadius: 10,
-  alignItems: 'center',
-},
-exchangeButtonText: {
-  fontWeight: 'bold',
-  color: '#fff',
-},
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#a0c4ff',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  exchangeButtonText: {
+    fontWeight: 'bold',
+    color: '#fff',
+  },
 });

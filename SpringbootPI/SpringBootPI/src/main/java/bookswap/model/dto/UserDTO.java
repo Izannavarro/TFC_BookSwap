@@ -26,6 +26,13 @@ public class UserDTO {
         this.username = username;
         this.profilePicture = profilePicture;
     }
+    
+    public UserDTO(String username, double lat, double lng, String address) {
+        this.username = username;
+        this.lat = lat;
+        this.lng = lng;
+        this.address = address;
+    }
 
     // Getters y setters para los nuevos campos
     

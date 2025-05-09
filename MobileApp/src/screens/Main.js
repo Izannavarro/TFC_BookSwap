@@ -6,21 +6,6 @@ import { Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export default function Main({ navigation }) {
-  const { theme } = useContext(Context);
-  // const [fontsLoaded, setFontsLoaded] = useState(false);
-
-  // useEffect(() => {
-  //   const loadFonts = async () => {
-  //     await Font.loadAsync({
-  //       'alegraya-sans': require('../assets/fonts/AlegreyaSansSC-Regular.ttf'),
-  //     });
-  //     setFontsLoaded(true);
-  //   };
-
-  //   if (!fontsLoaded) {
-  //     loadFonts();
-  //   }
-  // }, [fontsLoaded]);
 
   const toLogin = () => {
     navigation.navigate('Login');
@@ -29,8 +14,6 @@ export default function Main({ navigation }) {
   const toRegister = () => {
     navigation.navigate('Register');
   };
-
-  // if (!fontsLoaded) return null;
 
   return (
     <ImageBackground
@@ -62,12 +45,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)', // opacidad extra sobre el fondo
+    backgroundColor: 'rgba(0,0,0,0.3)', 
     padding: 20,
   },
   logo: {
-  width: width * 1.2,     // 60% del ancho de pantalla
-  height: width * 0.6,    // misma proporción para mantenerlo cuadrado
+  width: width * 1.2,    
+  height: width * 0.6,    
   resizeMode: 'contain',
   marginBottom: 40,
 },

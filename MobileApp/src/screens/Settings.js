@@ -16,20 +16,21 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Context from './Context';
 import axios from 'axios';
+import imageToBase64 from '../utilities/toBase64';
 
 const Settings = () => {
-  const { name, password, token, setToken, setName, setPassword } = useContext(Context);
+  const { username, setUsername, password, token, setToken, setPassword, picture, setPicture } = useContext(Context);
   const navigation = useNavigation();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedName, setEditedName] = useState(name);
+  const [editedName, setEditedName] = useState(username);
   const [editedPassword, setEditedPassword] = useState(password);
-  const [avatarUri, setAvatarUri] = useState('https://i.pravatar.cc/150?img=3');
+  const [avatarUri, setAvatarUri] = useState(null);
 
   useEffect(() => {
-    setEditedName(name);
+    setEditedName(username);
     setEditedPassword(password);
-  }, [name, password]);
+  }, [username, password]);
 
   const handleLogout = async () => {
     try {
@@ -38,7 +39,7 @@ const Settings = () => {
       console.warn('Logout fallido:', err);
     } finally {
       setToken(null);
-      setName('');
+      setUsername('');
       setPassword('');
       navigation.navigate('Login');
     }
@@ -58,7 +59,7 @@ const Settings = () => {
 
             if (res.status === 204) {
               setToken(null);
-              setName('');
+              setUsername('');
               setPassword('');
               navigation.navigate('Login');
             } else {
@@ -84,79 +85,94 @@ const Settings = () => {
         granted['android.permission.READ_EXTERNAL_STORAGE'] === PermissionsAndroid.RESULTS.GRANTED
       );
     }
-    return true; // iOS pide permisos automáticamente
+    return true;
   };
 
   const handleImageSelection = async () => {
-    const granted = await requestPermissions();
-    if (!granted) {
-      Alert.alert('Permisos requeridos', 'Se necesitan permisos para acceder a la cámara o galería.');
-      return;
-    }
+  const granted = await requestPermissions();
+  if (!granted) {
+    Alert.alert('Permisos requeridos', 'Se necesitan permisos para acceder a la cámara o galería.');
+    return;
+  }
 
-    Alert.alert('Cambiar foto', 'Selecciona el origen de la imagen', [
-      {
-        text: 'Cámara',
-        onPress: () => {
-          launchCamera({ mediaType: 'photo' }, (response) => {
-            if (response.assets && response.assets[0]) {
-              setAvatarUri(response.assets[0].uri);
-            }
-          });
-        },
+  Alert.alert('Cambiar foto', 'Selecciona el origen de la imagen', [
+    {
+      text: 'Cámara',
+      onPress: () => {
+        launchCamera({ mediaType: 'photo' }, async (response) => {
+          if (response.assets && response.assets[0]) {
+            const uri = response.assets[0].uri;
+            setAvatarUri(uri);
+            const base64Image = await imageToBase64(uri);
+            setPicture(base64Image);
+          }
+        });
       },
-      {
-        text: 'Galería',
-        onPress: () => {
-          launchImageLibrary({ mediaType: 'photo' }, (response) => {
-            if (response.assets && response.assets[0]) {
-              setAvatarUri(response.assets[0].uri);
-            }
-          });
-        },
+    },
+    {
+      text: 'Galería',
+      onPress: () => {
+        launchImageLibrary({ mediaType: 'photo' }, async (response) => {
+          if (response.assets && response.assets[0]) {
+            const uri = response.assets[0].uri;
+            setAvatarUri(uri);
+            const base64Image = await imageToBase64(uri);
+            setPicture(base64Image);
+          }
+        });
       },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
-  };
+    },
+    { text: 'Cancelar', style: 'cancel' },
+  ]);
+};
+
 
   const handleSave = async () => {
-    if (
-      editedName === name &&
-      editedPassword === password &&
-      avatarUri === 'https://i.pravatar.cc/150?img=3'
-    ) {
-      Alert.alert('Sin cambios', 'No se han realizado cambios en tu perfil.');
-      return;
+  const noChanges =
+    editedName === username &&
+    editedPassword === password &&
+    (avatarUri === null || avatarUri === picture);
+
+  if (noChanges) {
+    Alert.alert('Sin cambios', 'No se han realizado cambios en tu perfil.');
+    return;
+  }
+
+  try {
+    let base64Image = picture;
+    if (avatarUri && avatarUri !== picture) {
+      base64Image = await imageToBase64(avatarUri);
     }
 
-    try {
-      const res = await axios.put(
-        `http://localhost:8080/bookswap/updateUser?token=${token}`,
-        {
-          oldName: name,
-          newName: editedName,
-          password: editedPassword,
-          profilePicture: avatarUri,
-          extension: avatarUri.split('.').pop(),
-        }
-      );
-
-      if (res.status === 204) {
-        setName(editedName);
-        setPassword(editedPassword);
-        setIsEditing(false);
-        Alert.alert('Actualizado', 'Tu perfil ha sido actualizado.');
+    const res = await axios.put(
+      `http://localhost:8080/bookswap/updateUser?token=${token}`,
+      {
+        oldName: username,
+        newName: editedName,
+        password: editedPassword,
+        profilePicture: base64Image,
       }
-    } catch (err) {
-      console.error('Error actualizando usuario:', err);
-      Alert.alert('Error', 'No se pudo actualizar tu perfil.');
+    );
+
+    if (res.status === 204) {
+      setUsername(editedName);
+      setPassword(editedPassword);
+      setIsEditing(false);
+      setPicture(base64Image);
+      Alert.alert('Actualizado', 'Tu perfil ha sido actualizado.');
     }
-  };
+  } catch (err) {
+    console.error('Error actualizando usuario:', err);
+    Alert.alert('Error', 'No se pudo actualizar tu perfil.');
+  }
+};
+
+
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Image source={{ uri: avatarUri }} style={styles.avatar} />
+        <Image source={{ uri: picture }} style={styles.avatar} />
         <View style={styles.userInfo}>
           <View style={styles.inputRow}>
             <Icon name="person-outline" size={20} color="#888" />
@@ -233,6 +249,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
     padding: 16,
+    paddingTop: 40, // <-- Añadido
   },
   header: {
     flexDirection: 'row',

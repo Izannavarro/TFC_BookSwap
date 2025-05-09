@@ -19,7 +19,6 @@ export default Exchanges = () => {
   const route = useRoute();
 
   const [exchanges, setExchanges] = useState([]);
-  const [books, setBooks] = useState([]);
   const [selectedExchange, setSelectedExchange] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
@@ -27,22 +26,27 @@ export default Exchanges = () => {
   const [offeredBook, setOfferedBook] = useState('');
   const [receivedExchanges, setReceivedExchanges] = useState([]);
   const [receivedModalVisible, setReceivedModalVisible] = useState(false);
-  const { token, username, usersInfo, setUsersInfo } = useContext(Context);
+  const { token, username, usersInfo, setUsersInfo, userBooks, setUserBooks } =
+    useContext(Context);
 
   useEffect(() => {
     fetchMyExchanges();
 
-    fetch(
-      `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
-    )
-      .then((res) => res.json())
-      .then(setBooks)
-      .catch(console.warn);
+    if (!userBooks || userBooks.length === 0) {
+      fetch(
+        `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+      )
+        .then((res) => res.json())
+        .then(setUserBooks)
+        .catch(console.warn);
+    }
 
-    fetch(`http://localhost:8080/bookswap/getUsernames?token=${token}`)
-      .then((res) => res.json())
-      .then(setUsersInfo)
-      .catch(console.warn);
+    if (!usersInfo || usersInfo.length === 0) {
+      fetch(`http://localhost:8080/bookswap/getUsersInfo?token=${token}`)
+        .then((res) => res.json())
+        .then(setUsersInfo)
+        .catch(console.warn);
+    }
   }, []);
 
   useEffect(() => {
@@ -61,9 +65,8 @@ export default Exchanges = () => {
       .catch(console.warn);
   };
 
-  const getBookTitle = (bookId) => {
-    const book = books.find((b) => b._id === bookId);
-    return book ? book.title : 'Unknown Book';
+  const getBookById = (bookId) => {
+    return userBooks.find((book) => book._id === bookId);
   };
 
   const getUser = (userId) => usersInfo.find((u) => u._id === userId);
@@ -140,6 +143,8 @@ export default Exchanges = () => {
 
   const renderItem = ({ item }) => {
     const receiver = getUser(item.receiver_id);
+    const book = getBookById(item.book_id);
+
     return (
       <TouchableOpacity
         style={styles.exchangeItem}
@@ -148,8 +153,14 @@ export default Exchanges = () => {
           setModalVisible(true);
         }}>
         <View style={styles.left}>
+          {book?.image && (
+            <Image
+              source={{ uri: `data:image/png;base64,${book.image}` }}
+              style={styles.bookImage}
+            />
+          )}
           <Text style={styles.label}>Book:</Text>
-          <Text>{getBookTitle(item.book_id)}</Text>
+          <Text>{book?.title || 'Unknown Book'}</Text>
           <Text style={styles.label}>Date:</Text>
           <Text>{new Date(item.exchange_date).toLocaleString()}</Text>
         </View>
@@ -204,9 +215,20 @@ export default Exchanges = () => {
             {selectedExchange && (
               <>
                 <Text style={styles.modalTitle}>Exchange Details</Text>
+                {getBookById(selectedExchange.book_id)?.image && (
+                  <Image
+                    source={{
+                      uri: `data:image/png;base64,${
+                        getBookById(selectedExchange.book_id).image
+                      }`,
+                    }}
+                    style={styles.bookImage}
+                  />
+                )}
                 <Text>
                   <Text style={styles.label}>Book:</Text>{' '}
-                  {getBookTitle(selectedExchange.book_id)}
+                  {getBookById(selectedExchange.book_id)?.title ||
+                    'Unknown Book'}
                 </Text>
                 <Text>
                   <Text style={styles.label}>Owner ID:</Text>{' '}
@@ -377,5 +399,12 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 10,
     borderRadius: 8,
+  },
+  bookImage: {
+    width: 70,
+    height: 100,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignSelf: 'center',
   },
 });

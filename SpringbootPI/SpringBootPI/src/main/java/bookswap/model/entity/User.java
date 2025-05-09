@@ -33,16 +33,20 @@ public class User {
         this.id = _id;
     }
 
-    public String getName() {
+    public String getUsername() {
         return username;
     }
 
-    public void setName(String name) {
+    public void setUsername(String name) {
         this.username = name;
     }
     
     public void getProfilePicture() {
     	return profilePicture;
+    }
+    
+    public void setProfilePicture(String base64) {
+    	this.profilePicture = base64;
     }
 
     public String getAddress() {

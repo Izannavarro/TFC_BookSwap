@@ -1,24 +1,12 @@
-import React, { useState, useEffect } from 'react'; 
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-  TextInput,
-  Button,
-  Alert,
-} from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, TextInput, Button, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { launchImageLibrary } from 'react-native-image-picker';
+import RNFetchBlob from 'rn-fetch-blob'; 
 import Context from './Context';
 
 export default Books = () => {
-  const {
-    username,
-  } = useContext(Context);
-  const [books, setBooks] = useState([]);
+  const { username, token, userBooks, setUserBooks } = useContext(Context);
   const [selectedBook, setSelectedBook] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -28,29 +16,77 @@ export default Books = () => {
     author: '',
     genre: '',
     description: '',
-    image_url: '',
+    image_url: '', 
   });
   const [bookToDelete, setBookToDelete] = useState('');
 
   useEffect(() => {
-    // Simulamos la obtención de libros
-    fetch('http://localhost:8080/bookswap/get_books')
+  if (userBooks.length === 0) {
+    fetch(`http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`)
       .then(res => res.json())
-      .then(setBooks)
+      .then(setUserBooks)
       .catch(console.warn);
-  }, []);
+  }
+}, []);
+
+
+  const handleDeleteBook = async () => {
+  if (!bookToDelete) {
+    Alert.alert('Error', 'Debes seleccionar un libro para eliminar');
+    return;
+  }
+
+  try {
+    // Enviar solicitud DELETE con el cuerpo de la petición en formato JSON
+    const response = await fetch('http://localhost:8080/bookswap/deleteBook', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: bookToDelete, 
+        owner_username: username, 
+      }),
+    });
+
+    if (!response.ok) throw new Error('Error al eliminar el libro');
+
+    setUserBooks(userBooks.filter((book) => book.title !== bookToDelete));
+
+    // Cerrar el modal
+    setDeleteModalVisible(false);
+    setBookToDelete(''); 
+
+    Alert.alert('Éxito', 'El libro ha sido eliminado');
+  } catch (error) {
+    Alert.alert('Error', error.message);
+  }
+};
+
+
 
   const handleAddBook = async () => {
-    if (!user) {
+    if (!username) {
       Alert.alert('Error', 'Debes estar logueado para añadir un libro');
       return;
     }
 
-    // Asignamos automáticamente el username del usuario actual
+    const { title, author, genre, description, image_url } = formData;
+    if (!title || !author || !genre || !description || !image_url) {
+      Alert.alert('Campos incompletos', 'Por favor completa todos los campos');
+      return;
+    }
+
+    // Verificar si el libro ya existe por título
+    if (userBooks.some((b) => b.title === title)) {
+      Alert.alert('Duplicado', 'Ya existe un libro con ese título');
+      return;
+    }
+
     const bookData = { ...formData, owner_username: username };
 
     try {
-      const response = await fetch('http://localhost:8080/bookswap/add_book', {
+      const response = await fetch('http://localhost:8080/bookswap/addBook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookData),
@@ -59,7 +95,7 @@ export default Books = () => {
       if (!response.ok) throw new Error('Error al añadir libro');
 
       const newBook = await response.json();
-      setBooks([...books, newBook]);
+      setUserBooks([...userBooks, newBook]);
 
       setFormData({
         title: '',
@@ -67,7 +103,6 @@ export default Books = () => {
         genre: '',
         description: '',
         image_url: '',
-        owner_username: '', // Limpiar
       });
 
       setAddModalVisible(false);
@@ -76,21 +111,38 @@ export default Books = () => {
     }
   };
 
-  const handleDeleteBook = async () => {
-    try {
-      const response = await fetch('http://localhost:8080/bookswap/delete_book', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: bookToDelete }),
-      });
+  // Función para seleccionar imagen desde la cámara o galería
+  const selectImage = () => {
+    const options = {
+      title: 'Selecciona una imagen',
+      chooseFromLibraryButtonTitle: 'Elegir de la galería',
+      takePhotoButtonTitle: 'Tomar foto',
+      quality: 1,
+      mediaType: 'photo',
+      maxWidth: 800,
+      maxHeight: 800,
+    };
 
-      if (!response.ok) throw new Error('Error al eliminar libro');
+    launchImageLibrary(options, async (response) => {
+      if (response.didCancel) {
+        console.log('El usuario canceló la selección de imagen');
+      } else if (response.errorCode) {
+        console.log('Error al seleccionar imagen', response.errorMessage);
+      } else {
+        try {
+          const imageUri = response.assets[0].uri;
+          
+          // Convertir imagen a Base64 usando RNFetchBlob
+          const base64Image = await RNFetchBlob.fs.readFile(imageUri, 'base64');
+          
+          // Establecer la URL de la imagen en formato Base64
+          setFormData({ ...formData, image_url: `data:image/jpeg;base64,${base64Image}` });
 
-      setBooks(books.filter((b) => b.title !== bookToDelete));
-      setDeleteModalVisible(false);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
+        } catch (error) {
+          console.error('Error al convertir la imagen a base64', error);
+        }
+      }
+    });
   };
 
   const renderBookItem = ({ item }) => (
@@ -107,13 +159,13 @@ export default Books = () => {
 
   return (
     <View style={styles.container}>
-      {books.length === 0 ? (
+      {userBooks.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Añade un libro</Text>
         </View>
       ) : (
         <FlatList
-          data={books}
+          data={userBooks}
           keyExtractor={(item) => item.title}
           renderItem={renderBookItem}
           contentContainerStyle={styles.list}
@@ -121,18 +173,18 @@ export default Books = () => {
       )}
 
       <View style={styles.buttonContainer}>
-        {books.length < 5 && (
+        {userBooks.length < 5 && (
           <TouchableOpacity
             style={styles.button}
             onPress={() => setAddModalVisible(true)}>
-            <Text style={styles.buttonText}>Add Book</Text>
+            <Text style={styles.buttonText}>Añadir Libro</Text>
           </TouchableOpacity>
         )}
-        {books.length > 0 && (
+        {userBooks.length > 0 && (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: 'red' }]}
             onPress={() => setDeleteModalVisible(true)}>
-            <Text style={styles.buttonText}>Delete Book</Text>
+            <Text style={styles.buttonText}>Eliminar Libro</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -151,10 +203,12 @@ export default Books = () => {
                 <Text>Author: {selectedBook.author}</Text>
                 <Text>Genre: {selectedBook.genre}</Text>
                 <Text>Description: {selectedBook.description}</Text>
-                <Text>Owner: {selectedBook.owner_username}</Text> {/* Aquí se muestra el username */}
+                <Text>Owner: {selectedBook.owner_username}</Text>
                 <Text>
                   Published:{' '}
-                  {new Date(selectedBook.publication_date).toDateString()}
+                  {selectedBook.publication_date
+                    ? new Date(selectedBook.publication_date).toDateString()
+                    : 'N/A'}
                 </Text>
               </>
             )}
@@ -168,19 +222,21 @@ export default Books = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Nuevo Libro</Text>
-            {['title', 'author', 'genre', 'description', 'image_url'].map(
-              (field) => (
-                <TextInput
-                  key={field}
-                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={formData[field]}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, [field]: text })
-                  }
-                  style={styles.input}
-                />
-              )
-            )}
+            {['title', 'author', 'genre', 'description'].map((field) => (
+              <TextInput
+                key={field}
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                value={formData[field]}
+                onChangeText={(text) => setFormData({ ...formData, [field]: text })}
+                style={styles.input}
+              />
+            ))}
+            <TouchableOpacity style={styles.selectImageButton} onPress={selectImage}>
+              <Text style={styles.buttonText}>Seleccionar Imagen</Text>
+            </TouchableOpacity>
+            {formData.image_url ? (
+              <Image source={{ uri: formData.image_url }} style={styles.image} />
+            ) : null}
             <Button title="Añadir" onPress={handleAddBook} />
             <Button
               title="Cancelar"
@@ -199,12 +255,8 @@ export default Books = () => {
             <Picker
               selectedValue={bookToDelete}
               onValueChange={(itemValue) => setBookToDelete(itemValue)}>
-              {books.map((book) => (
-                <Picker.Item
-                  key={book.title}
-                  label={book.title}
-                  value={book.title}
-                />
+              {userBooks.map((book) => (
+                <Picker.Item key={book.title} label={book.title} value={book.title} />
               ))}
             </Picker>
             <Button title="Eliminar" color="red" onPress={handleDeleteBook} />
