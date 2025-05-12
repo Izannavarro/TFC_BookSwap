@@ -1,8 +1,10 @@
-import bookswap.model.repository.ExchangeRepository;
-import bookswap.model.repository.UserRepository;
-import bookswap.model.repository.BookRepository;
-import bookswap.model.repository.ChatRepository;
-import bookswap.model.repository.MessageRepository;
+package bookswap.controller;
+
+import bookswap.repository.ExchangeRepository;
+import bookswap.repository.UserRepository;
+import bookswap.repository.BookRepository;
+import bookswap.repository.ChatRepository;
+import bookswap.repository.MessageRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -125,7 +127,7 @@ public class Controller {
 	public ResponseEntity<Object> register(@RequestBody UserDTO userDTO) {
 	    String passwordHash = DigestUtils.sha256Hex(userDTO.getPassword());
 
-	    Optional<User> dbUser = userRepository.findByUser(userDTO.getUsername());
+	    Optional<User> dbUser = userRepository.getUserByName(userDTO.getUsername());
 	    if (dbUser.isPresent()) {
 	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 	    } else {
@@ -133,7 +135,7 @@ public class Controller {
 	        User newUser = new User(
 	            userDTO.getUsername(),
 	            passwordHash,
-	            userDTO.getProfilePicture(),
+	            null,
 	            userDTO.getAddress(),
 	            userDTO.getLat(),
 	            userDTO.getLng()
@@ -176,7 +178,7 @@ public class Controller {
 	}
 	
 	
-	@GetMapping("/bookswap/userLocations")
+	@GetMapping("bookswap/userLocations")
 	public ResponseEntity<Object> getOtherUsersCoordinates(@RequestParam("currentUsername") String currentUsername) {
 	    // Obtener todos los usuarios
 	    List<User> allUsers = userRepository.findAll();
@@ -214,6 +216,7 @@ public class Controller {
 
 	    // Construir el DTO UserInfo
 	    UserInfo userInfo = new UserInfo(
+    		user.getId(),
 	        user.getUsername(),
 	        user.getAddress(),
 	        user.getProfilePicture()
@@ -227,7 +230,7 @@ public class Controller {
     public ResponseEntity<Object> addBook(@RequestBody BookDTO bookDTO) {
 		
         // Buscar el usuario por nombre de usuario (username)
-        Optional<User> dbUser = userRepository.findByUsername(bookDTO.getOwner_username());
+        Optional<User> dbUser = userRepository.getUserByName(bookDTO.getOwner_username());
 
         // Si el usuario no existe, devolver un error
         if (!dbUser.isPresent()) {
@@ -240,9 +243,13 @@ public class Controller {
         newBook.setAuthor(bookDTO.getAuthor());
         newBook.setGenre(bookDTO.getGenre());
         newBook.setDescription(bookDTO.getDescription());
-        newBook.setImageUrl(bookDTO.getImageUrl());
+        newBook.setImage_url(bookDTO.getImage_url());
         newBook.setOwner_username(bookDTO.getOwner_username());
-        newBook.setPublicationDate(java.time.LocalDate.now()); 
+        
+        String formattedDate = java.time.LocalDate.now().format(
+        	    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        	);
+    	newBook.setPublication_date(formattedDate);
 
         // Guardar el libro en la base de datos
         bookRepository.save(newBook);
@@ -353,18 +360,23 @@ public class Controller {
 
 	    Optional<User> owner = userRepository.getUserByName(ownerName);
 	    Optional<User> receiver = userRepository.getUserByName(receiverName);
-	    Optional<Book> book = bookRepository.getBookByTitle(bookTitle);
+	    Optional<Book> book = bookRepository.findByTitleAndOwnerUsername(bookTitle,ownerName);
 
 	    if (owner.isEmpty() || receiver.isEmpty() || book.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Datos inválidos o incompletos");
 	    }
 
 	    Exchange exchange = new Exchange();
-	    exchange.setBookId(book.get().getId());
-	    exchange.setOwnerId(owner.get().getId());
-	    exchange.setReceiverId(receiver.get().getId());
+	    exchange.setBook_id(book.get().get_id());
+	    exchange.setOwner_id(owner.get().getId());
+	    exchange.setReceiver_id(receiver.get().getId());
 	    exchange.setStatus("pending");
-	    exchange.setExchangeDate(LocalDateTime.now());
+	    
+	    String formattedDateTime = java.time.LocalDateTime.now().format(
+	    	    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+	    	);
+    	exchange.setExchange_date(formattedDateTime);
+
 
 	    exchangeRepository.save(exchange);
 
@@ -395,7 +407,7 @@ public class Controller {
 	
 	@PutMapping("bookswap/updateExchangeStatus")
 	public ResponseEntity<?> updateExchangeStatus(@RequestBody ExchangeDTO dto) {
-	    Optional<Exchange> optionalExchange = exchangeRepository.findById(dto.getId);
+	    Optional<Exchange> optionalExchange = exchangeRepository.findByIdAndOwnerId(dto.getId(),dto.getOwner_id());
 
 	    if (!optionalExchange.isPresent()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Exchange not found");
@@ -422,7 +434,7 @@ public class Controller {
 
 	    List<Map<String, Object>> chatList = chats.stream().map(chat -> {
 	        Map<String, Object> result = new HashMap<>();
-	        result.put("_id", chat.getId());
+	        result.put("_id", chat.get_id());
 	        result.put("participants", chat.getParticipants());	
 	        return result;
 	    }).collect(Collectors.toList());
@@ -433,13 +445,7 @@ public class Controller {
 
 	@GetMapping("/bookswap/getMessages")
 	public ResponseEntity<List<MessageInfo>> getMessages(
-	        @RequestParam String chatId, 
-	        @RequestParam("token") String token) {
-
-	    // Validar el token
-	    if (!Utilities.checkUser(tokens, token)) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
-	    }
+	        @RequestParam String chatId) {
 	    
 	    List<Message> messages = messageRepository.findByChatIdOrderByTimestampAsc(chatId);
 

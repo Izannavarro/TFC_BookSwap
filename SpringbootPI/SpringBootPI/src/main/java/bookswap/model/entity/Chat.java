@@ -1,3 +1,5 @@
+package bookswap.model.entity;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -47,7 +49,6 @@ public class Chat {
         return "Chat{" +
                 "_id='" + id + '\'' +
                 ", participants=" + participants +
-                ", created_at='" + created_at + '\'' +
                 ", messages=" + messages +
                 '}';
     }

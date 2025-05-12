@@ -1,4 +1,7 @@
+package bookswap.repository;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import bookswap.model.entity.Book;
@@ -9,7 +12,5 @@ public interface BookRepository extends MongoRepository<Book, String> {
 	@Query("{ 'owner_username': ?0 }")
 	List<Book> findByOwnerUsername(String ownerUsername);
 
-	// Buscar los libros por su id de propietario (owner_id)
-    List<Book> findByOwnerId(String ownerId);
-    
+	Optional<Book> findByTitleAndOwnerUsername(String title, String ownerUsername);
 }

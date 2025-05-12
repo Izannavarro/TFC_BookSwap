@@ -1,13 +1,21 @@
+package bookswap.repository;
+
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
+import bookswap.model.entity.Exchange;
+
 
 @Repository
 public interface ExchangeRepository extends MongoRepository<Exchange, String> {
 
     @Query("{ 'owner_id' : ?0 }")
     List<Exchange> findByOwnerId(String ownerId);
+    
+    Optional<Exchange> findByIdAndOwnerId(String id, String ownerId);
 
     List<Exchange> findByReceiverId(String receiverId);
 

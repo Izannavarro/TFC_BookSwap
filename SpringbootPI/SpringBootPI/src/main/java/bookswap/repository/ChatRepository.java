@@ -1,11 +1,11 @@
-
+package bookswap.repository;
+import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import bookswap.model.entity.Chat;
 
-public class ChatRepository extends MongoRepository<Chat, String>{
+public interface ChatRepository extends MongoRepository<Chat, String>{
 	
 	// Buscar todos los chats donde un usuario es participante
     @Query("{ 'participant': ?0 }")

@@ -1,5 +1,10 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
+package bookswap.model.entity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+import bookswap.model.dto.*;
+
+@Service
 public class GeocodeService {
 
     public GeocodeResponseDTO parseGeocodeResponse(String jsonResponse) {

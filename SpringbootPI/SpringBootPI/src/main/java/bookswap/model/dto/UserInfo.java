@@ -1,12 +1,14 @@
-import java.util.List;
+package bookswap.model.dto;
 
 public class UserInfo {
+	private String id;
     private String username;
     private String address;
     private String profilePicture;
 
     // Constructor con parámetros
-    public UserInfo( String username, String address, String profilePicture) {
+    public UserInfo(String id, String username, String address, String profilePicture) {
+    	this.id = id;
         this.username = username;
         this.address = address;
         this.profilePicture = profilePicture;
@@ -18,7 +20,15 @@ public class UserInfo {
     }
 
     // Getters y setters
+    
+    public String getId() {
+        return id;
+    }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public String getUsername() {
         return username;
     }

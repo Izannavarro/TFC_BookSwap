@@ -1,3 +1,5 @@
+package bookswap.model.dto;
+
 public class MessageInfo {
 
     private String senderId;

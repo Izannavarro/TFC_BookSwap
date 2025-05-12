@@ -1,9 +1,20 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, Modal, StyleSheet, TextInput, Button, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+  TextInput,
+  Button,
+  Alert,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
-import RNFetchBlob from 'rn-fetch-blob'; 
 import Context from './Context';
+import * as FileSystem from 'expo-file-system';
 
 export default Books = () => {
   const { username, token, userBooks, setUserBooks } = useContext(Context);
@@ -16,54 +27,56 @@ export default Books = () => {
     author: '',
     genre: '',
     description: '',
-    image_url: '', 
+    image_url: '',
   });
   const [bookToDelete, setBookToDelete] = useState('');
 
   useEffect(() => {
-  if (userBooks.length === 0) {
-    fetch(`http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`)
-      .then(res => res.json())
-      .then(setUserBooks)
-      .catch(console.warn);
-  }
-}, []);
-
+    if (userBooks.length === 0) {
+      fetch(
+        `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+      )
+        .then((res) => res.json())
+        .then(setUserBooks)
+        .catch(console.warn);
+    }
+  }, []);
 
   const handleDeleteBook = async () => {
-  if (!bookToDelete) {
-    Alert.alert('Error', 'Debes seleccionar un libro para eliminar');
-    return;
-  }
+    if (!bookToDelete) {
+      Alert.alert('Error', 'Debes seleccionar un libro para eliminar');
+      return;
+    }
 
-  try {
-    // Enviar solicitud DELETE con el cuerpo de la petición en formato JSON
-    const response = await fetch('http://localhost:8080/bookswap/deleteBook', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: bookToDelete, 
-        owner_username: username, 
-      }),
-    });
+    try {
+      // Enviar solicitud DELETE con el cuerpo de la petición en formato JSON
+      const response = await fetch(
+        'http://localhost:8080/bookswap/deleteBook',
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title: bookToDelete,
+            owner_username: username,
+          }),
+        }
+      );
 
-    if (!response.ok) throw new Error('Error al eliminar el libro');
+      if (!response.ok) throw new Error('Error al eliminar el libro');
 
-    setUserBooks(userBooks.filter((book) => book.title !== bookToDelete));
+      setUserBooks(userBooks.filter((book) => book.title !== bookToDelete));
 
-    // Cerrar el modal
-    setDeleteModalVisible(false);
-    setBookToDelete(''); 
+      // Cerrar el modal
+      setDeleteModalVisible(false);
+      setBookToDelete('');
 
-    Alert.alert('Éxito', 'El libro ha sido eliminado');
-  } catch (error) {
-    Alert.alert('Error', error.message);
-  }
-};
-
-
+      Alert.alert('Éxito', 'El libro ha sido eliminado');
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  };
 
   const handleAddBook = async () => {
     if (!username) {
@@ -131,13 +144,17 @@ export default Books = () => {
       } else {
         try {
           const imageUri = response.assets[0].uri;
-          
-          // Convertir imagen a Base64 usando RNFetchBlob
-          const base64Image = await RNFetchBlob.fs.readFile(imageUri, 'base64');
-          
-          // Establecer la URL de la imagen en formato Base64
-          setFormData({ ...formData, image_url: `data:image/jpeg;base64,${base64Image}` });
 
+          // Usamos expo-file-system para leer el archivo y convertirlo a Base64
+          const base64Image = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // Establecer la URL de la imagen en formato Base64
+          setFormData({
+            ...formData,
+            image_url: `data:image/jpeg;base64,${base64Image}`,
+          });
         } catch (error) {
           console.error('Error al convertir la imagen a base64', error);
         }
@@ -212,7 +229,10 @@ export default Books = () => {
                 </Text>
               </>
             )}
-            <Button title="Cerrar" onPress={() => setDetailModalVisible(false)} />
+            <Button
+              title="Cerrar"
+              onPress={() => setDetailModalVisible(false)}
+            />
           </View>
         </View>
       </Modal>
@@ -227,15 +247,22 @@ export default Books = () => {
                 key={field}
                 placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
                 value={formData[field]}
-                onChangeText={(text) => setFormData({ ...formData, [field]: text })}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, [field]: text })
+                }
                 style={styles.input}
               />
             ))}
-            <TouchableOpacity style={styles.selectImageButton} onPress={selectImage}>
+            <TouchableOpacity
+              style={styles.selectImageButton}
+              onPress={selectImage}>
               <Text style={styles.buttonText}>Seleccionar Imagen</Text>
             </TouchableOpacity>
             {formData.image_url ? (
-              <Image source={{ uri: formData.image_url }} style={styles.image} />
+              <Image
+                source={{ uri: formData.image_url }}
+                style={styles.image}
+              />
             ) : null}
             <Button title="Añadir" onPress={handleAddBook} />
             <Button
@@ -251,12 +278,18 @@ export default Books = () => {
       <Modal visible={deleteModalVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Selecciona un libro a eliminar</Text>
+            <Text style={styles.modalTitle}>
+              Selecciona un libro a eliminar
+            </Text>
             <Picker
               selectedValue={bookToDelete}
               onValueChange={(itemValue) => setBookToDelete(itemValue)}>
               {userBooks.map((book) => (
-                <Picker.Item key={book.title} label={book.title} value={book.title} />
+                <Picker.Item
+                  key={book.title}
+                  label={book.title}
+                  value={book.title}
+                />
               ))}
             </Picker>
             <Button title="Eliminar" color="red" onPress={handleDeleteBook} />

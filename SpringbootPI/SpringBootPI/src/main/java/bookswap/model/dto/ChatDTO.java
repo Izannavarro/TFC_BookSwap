@@ -1,3 +1,5 @@
+package bookswap.model.dto;
+
 public class ChatDTO {
     private String participant1Id;
     private String participant2Id;

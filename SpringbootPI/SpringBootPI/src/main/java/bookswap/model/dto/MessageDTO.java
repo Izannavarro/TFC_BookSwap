@@ -1,3 +1,5 @@
+package bookswap.model.dto;
+
 public class MessageDTO {
 
     private String chatId;
@@ -44,13 +46,5 @@ public class MessageDTO {
 
     public void setContent(String content) {
         this.content = content;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
     }
 }

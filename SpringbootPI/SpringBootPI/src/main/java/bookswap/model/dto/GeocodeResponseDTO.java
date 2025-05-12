@@ -1,3 +1,4 @@
+package bookswap.model.dto;
 
 public class GeocodeResponseDTO {
     private double lat;

@@ -1,3 +1,5 @@
+package bookswap.model.dto;
+
 public class BookDTO {
     private String title;
     private String author;

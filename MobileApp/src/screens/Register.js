@@ -4,6 +4,7 @@ import { TextInput } from 'react-native-paper';
 import Context from './Context';
 import * as Font from 'expo-font';
 import logo from '../assets/LOGO_BOOKSWAP.png';
+import imageToBase64 from '../utilities/toBase64';
 
 export default function Register({ navigation }) {
   const { setUsername,  setPassword, setToken, setPicture } = useContext(Context);
@@ -24,48 +25,53 @@ export default function Register({ navigation }) {
   };
 
   const toApp = async () => {
-  if (!textName || !password || !address) {
+  if (!textName || !textPwd || !address) {
     alert('Username, password, and address cannot be empty.');
     return;
   }
 
-  if (password !== confirmPassword) {
+  if (textPwd !== confirmPassword) {
     alert('Passwords must be the same.');
     return;
   }
 
   try {
-    // Paso 1: Validar dirección usando el backend
-    const geoResponse = await fetch(
-      `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
-    );
 
-    if (!geoResponse.ok) {
-      if (geoResponse.status === 404) {
-        alert('La dirección ingresada no es válida o está mal estructurada.');
-      } else {
-        alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
-      }
-      return;
-    }
+    // // Paso 1: Validar dirección usando el backend
+    // const geoResponse = await fetch(
+    //   `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
+    // );
 
-    const geoData = await geoResponse.json();
-    if (!geoData.lat || !geoData.lng) {
-      alert('No se pudieron obtener las coordenadas de la dirección.');
-      return;
-    }
+    // if (!geoResponse.ok) {
+    //   if (geoResponse.status === 404) {
+    //     alert('La dirección ingresada no es válida o está mal estructurada.');
+    //   } else {
+    //     alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
+    //   }
+    //   return;
+    // }
+
+    // const geoData = await geoResponse.json();
+    // if (!geoData.lat || !geoData.lng) {
+    //   alert('No se pudieron obtener las coordenadas de la dirección.');
+    //   return;
+    // }
+
+    // Paso 1: Usar valores predeterminados para latitud y longitud de Valencia (por ejemplo, Plaza del Ayuntamiento)
+    const lat = 39.4699;  // Latitud aproximada de Valencia
+    const lng = -0.3763;   // Longitud aproximada de Valencia
 
     // Paso 2: Crear usuario
-    const response = await fetch('http://localhost:8080/bookswap/register', {
+    const response = await fetch('http://192.168.1.134:8080/bookswap/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: textName,
-        password,
-        profilePicture: await imageToBase64(Image.resolveAssetSource(logo).uri),
-        address,
-        lat: geoData.lat,
-        lng: geoData.lng,
+          password: textPwd,
+          profilePicture: null, 
+          address: address,
+          lat: lat,
+          lng: lng,
       }),
     });
 
@@ -78,7 +84,9 @@ export default function Register({ navigation }) {
     setToken(responseText);
     setUsername(textName);
     setPassword(textPwd);
-    setPicture(Image.resolveAssetSource(logo).uri);
+    setPicture(null);
+
+    console.log(responseText);
 
     navigation.navigate('LoadingScreen');
   } catch (error) {

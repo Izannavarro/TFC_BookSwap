@@ -1,3 +1,5 @@
+package bookswap.model.dto;
+
 public class ExchangeDTO {
 	
 	private String id;
@@ -8,12 +10,18 @@ public class ExchangeDTO {
     private String exchange_date;
 
     // Constructor
-    public ExchangeDTO(String id, String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
+    public ExchangeDTO(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
         this.book_id = book_id;
         this.owner_id = owner_id;
         this.receiver_id = receiver_id;
         this.status = status;
         this.exchange_date = exchange_date;
+    }
+    
+    public ExchangeDTO(String id, String owner_id, String status) {
+    	this.id = id;
+    	this.owner_id = owner_id;
+    	this.status = status;
     }
 
     // Getters y setters

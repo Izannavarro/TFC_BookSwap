@@ -21,13 +21,13 @@ export default function Login({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
 
   const toApp = async () => {
-    if (!username || !password) {
+    if (!textName || !textPwd) {
       Alert.alert('El usuario o la contraseña no pueden estar vacíos.');
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:8080/bookswap/login', {
+      const response = await fetch('http://192.168.1.134:8080/bookswap/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: textName , password: textPwd }),

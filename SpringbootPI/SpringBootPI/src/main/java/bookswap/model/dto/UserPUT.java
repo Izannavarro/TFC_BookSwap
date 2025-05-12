@@ -1,17 +1,16 @@
+package bookswap.model.dto;
 
 public class UserPUT {
 	private String oldName;
 	private String newName;
 	private String password;
 	private String profilePicture;
-	private String adress;
 	
-	public UserPUT(String oldName, String newName, String password, String profilePicture, String adress) {
+	public UserPUT(String oldName, String newName, String password, String profilePicture) {
 		this.oldName = oldName;
 		this.newName = newName;
 		this.password = password;
 		this.profilePicture = profilePicture;
-		this.adress = adress;
 	}
 	
 	public UserPUT() {
@@ -49,3 +48,4 @@ public class UserPUT {
 	public void setProfilePicture(String profilePicture) {
 		this.profilePicture = profilePicture;
 	}
+}

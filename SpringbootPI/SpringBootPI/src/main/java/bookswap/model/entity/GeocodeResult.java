@@ -1,3 +1,5 @@
+package bookswap.model.entity;
+
 public class GeocodeResult {
     private Geometry geometry;
 

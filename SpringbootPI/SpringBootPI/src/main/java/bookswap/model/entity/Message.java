@@ -1,11 +1,13 @@
+package bookswap.model.entity;
+
 import java.util.UUID;
 
 public class Message {
 
     private String message_id;
     private String chatId;
-    private String sender_id;
-    private String receiver_id;
+    private String senderId;
+    private String receiverId;
     private String content;
     private String timestamp;
     private String status;
@@ -15,8 +17,8 @@ public class Message {
     public Message(String chatId, String sender_id, String receiver_id, String content, String timestamp, String status) {
         this.message_id = UUID.randomUUID().toString();
         this.chatId = chatId;
-        this.sender_id = sender_id;
-        this.receiver_id = receiver_id;
+        this.senderId = sender_id;
+        this.receiverId = receiver_id;
         this.content = content;
         this.timestamp = timestamp;
         this.status = status;
@@ -39,19 +41,19 @@ public class Message {
     }
 
     public String getSender_id() {
-        return sender_id;
+        return senderId;
     }
 
     public void setSender_id(String sender_id) {
-        this.sender_id = sender_id;
+        this.senderId = sender_id;
     }
 
     public String getReceiver_id() {
-        return receiver_id;
+        return receiverId;
     }
 
     public void setReceiver_id(String receiver_id) {
-        this.receiver_id = receiver_id;
+        this.receiverId = receiver_id;
     }
 
     public String getContent() {
@@ -83,8 +85,8 @@ public class Message {
         return "Message{" +
                 "message_id='" + message_id + '\'' +
                 ", chatId='" + chatId + '\'' +
-                ", sender_id='" + sender_id + '\'' +
-                ", receiver_id='" + receiver_id + '\'' +
+                ", sender_id='" + senderId + '\'' +
+                ", receiver_id='" + receiverId + '\'' +
                 ", content='" + content + '\'' +
                 ", timestamp='" + timestamp + '\'' +
                 ", status='" + status + '\'' +

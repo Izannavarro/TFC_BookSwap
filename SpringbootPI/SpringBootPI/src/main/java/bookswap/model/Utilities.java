@@ -1,3 +1,5 @@
+package bookswap.model;
+
 import java.util.ArrayList;
 
 public class Utilities {

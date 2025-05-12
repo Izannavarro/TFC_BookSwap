@@ -1,3 +1,5 @@
+package bookswap.model.entity;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -41,7 +43,15 @@ public class User {
         this.username = name;
     }
     
-    public void getProfilePicture() {
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+    
+    public String getProfilePicture() {
     	return profilePicture;
     }
     

@@ -1,4 +1,7 @@
+package bookswap.model.dto;
+
 public class UserDTO {
+	
 	private String id;
     private String username;
     private String password;
@@ -7,11 +10,11 @@ public class UserDTO {
     private double lat;
     private double lng;
 
-    public UserDTO(String username, String password, String address, String profilePicture, double lat, double lng) {
+    public UserDTO(String username, String password, String profilePicture, String address, double lat, double lng) {
         this.username = username;
         this.password = password;
-        this.address = address;
         this.profilePicture = profilePicture;
+        this.address = address;
         this.lat = lat;
         this.lng = lng;
     }
@@ -33,7 +36,9 @@ public class UserDTO {
         this.lng = lng;
         this.address = address;
     }
-
+    
+    public UserDTO() {}
+    
     // Getters y setters para los nuevos campos
     
     public String getId() {

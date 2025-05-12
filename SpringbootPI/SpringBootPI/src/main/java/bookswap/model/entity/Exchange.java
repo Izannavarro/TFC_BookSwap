@@ -1,3 +1,5 @@
+package bookswap.model.entity;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -6,22 +8,22 @@ public class Exchange {
 	
 	@Id
     private String id;
-    private String book_id;
-    private String owner_id;
-    private String receiver_id;
+    private String bookId;
+    private String ownerId;
+    private String receiverId;
     private String status;
-    private String exchange_date;
+    private String exchangeDate;
 
     // Constructor vacío
     public Exchange() {}
 
     // Constructor completo
     public Exchange(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
-        this.book_id = book_id;
-        this.owner_id = owner_id;
-        this.receiver_id = receiver_id;
+        this.bookId = book_id;
+        this.ownerId = owner_id;
+        this.receiverId = receiver_id;
         this.status = status;
-        this.exchange_date = exchange_date;
+        this.exchangeDate = exchange_date;
     }
 
     // Getters y setters
@@ -34,27 +36,27 @@ public class Exchange {
     }
 
     public String getBook_id() {
-        return book_id;
+        return bookId;
     }
 
     public void setBook_id(String book_id) {
-        this.book_id = book_id;
+        this.bookId = book_id;
     }
 
     public String getOwner_id() {
-        return owner_id;
+        return ownerId;
     }
 
-    public void setOwner_id(String owner_id) {
-        this.owner_id = owner_id;
+    public void setOwner_id(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getReceiver_id() {
-        return receiver_id;
+        return receiverId;
     }
 
-    public void setReceiver_id(String receiver_id) {
-        this.receiver_id = receiver_id;
+    public void setReceiver_id(String receiverId) {
+        this.receiverId = receiverId;
     }
 
     public String getStatus() {
@@ -66,11 +68,11 @@ public class Exchange {
     }
 
     public String getExchange_date() {
-        return exchange_date;
+        return exchangeDate;
     }
 
-    public void setExchange_date(String exchange_date) {
-        this.exchange_date = exchange_date;
+    public void setExchange_date(String exchangeDate) {
+        this.exchangeDate = exchangeDate;
     }
 
     // Método toString para depuración rápida
@@ -78,11 +80,11 @@ public class Exchange {
     public String toString() {
         return "Exchange{" +
                 "_id='" + id + '\'' +
-                ", book_id='" + book_id + '\'' +
-                ", owner_id='" + owner_id + '\'' +
-                ", receiver_id='" + receiver_id + '\'' +
+                ", book_id='" + bookId + '\'' +
+                ", owner_id='" + ownerId + '\'' +
+                ", receiver_id='" + receiverId + '\'' +
                 ", status='" + status + '\'' +
-                ", exchange_date='" + exchange_date + '\'' +
+                ", exchange_date='" + exchangeDate + '\'' +
                 '}';
     }
 }

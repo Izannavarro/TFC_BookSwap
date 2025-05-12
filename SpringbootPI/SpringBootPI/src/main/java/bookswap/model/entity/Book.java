@@ -1,3 +1,7 @@
+package bookswap.model.entity;
+
+import java.time.LocalDate;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -11,8 +15,8 @@ public class Book {
     private String genre;
     private String description;
     private String image_url;
-    private String owner_username;
-    private String publication_date;
+    private String ownerUsername;
+    private String publicationDate;
 
     // Constructor vacío
     public Book() {}
@@ -24,8 +28,8 @@ public class Book {
         this.genre = genre;
         this.description = description;
         this.image_url = image_url;
-        this.owner_username = owner_username;
-        this.publication_date = publication_date;
+        this.ownerUsername = owner_username;
+        this.publicationDate = publication_date;
     }
 
     // Getters y setters
@@ -78,19 +82,19 @@ public class Book {
     }
 
     public String getOwner_username() {
-        return owner_username;
+        return ownerUsername;
     }
 
     public void setOwner_username(String owner_username) {
-        this.owner_username = owner_username;
+        this.ownerUsername = owner_username;
     }
 
     public String getPublication_date() {
-        return publication_date;
+        return publicationDate;
     }
 
-    public void setPublication_date(String publication_date) {
-        this.publication_date = publication_date;
+    public void setPublication_date(String localDate) {
+        this.publicationDate = localDate;
     }
 
     // Método toString para depuración rápida
@@ -103,8 +107,8 @@ public class Book {
                 ", genre='" + genre + '\'' +
                 ", description='" + description + '\'' +
                 ", image_url='" + image_url + '\'' +
-                ", owner_username='" + owner_username + '\'' +
-                ", publication_date='" + publication_date + '\'' +
+                ", owner_username='" + ownerUsername + '\'' +
+                ", publication_date='" + publicationDate + '\'' +
                 '}';
     }
 }
