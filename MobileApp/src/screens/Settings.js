@@ -191,32 +191,33 @@ const Settings = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
+        <Image source={logo} style={styles.logo} />
         <Image
-          source={picture != null ? { uri: picture } : logo}
+          source={picture ? { uri: picture } : logo}
           style={styles.avatar}
         />
-        <View style={styles.userInfo}>
-          <View style={styles.inputRow}>
-            <Icon name="person-outline" size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              value={editedName}
-              onChangeText={setEditedName}
-              editable={isEditing}
-              placeholder="Nombre"
-            />
-          </View>
-          <View style={styles.inputRow}>
-            <Icon name="lock-closed-outline" size={20} color="#888" />
-            <TextInput
-              style={styles.input}
-              value={editedPassword}
-              onChangeText={setEditedPassword}
-              editable={isEditing}
-              secureTextEntry
-              placeholder="Contraseña"
-            />
-          </View>
+      </View>
+      <View style={styles.card}>
+        <View style={styles.inputRow}>
+          <Icon name="person-outline" size={20} color="#888" />
+          <TextInput
+            style={styles.input}
+            value={editedName}
+            onChangeText={setEditedName}
+            editable={isEditing}
+            placeholder="Nombre"
+          />
+        </View>
+        <View style={styles.inputRow}>
+          <Icon name="lock-closed-outline" size={20} color="#888" />
+          <TextInput
+            style={styles.input}
+            value={editedPassword}
+            onChangeText={setEditedPassword}
+            editable={isEditing}
+            secureTextEntry
+            placeholder="Contraseña"
+          />
         </View>
       </View>
 
@@ -279,33 +280,47 @@ export default Settings;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
     padding: 16,
-    paddingTop: 40, // <-- Añadido
+    paddingTop: 40,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  logo: {
+    width: 100,
+    height: 60,
+    resizeMode: 'contain',
+    marginBottom: 10,
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginRight: 16,
-    borderWidth: 2,
-    borderColor: '#007bff',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#a0c4ff',
+    marginBottom: 16,
   },
-  userInfo: {
-    flex: 1,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    marginBottom: 8,
-    paddingBottom: 4,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
   input: {
     marginLeft: 8,
@@ -314,15 +329,16 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   pictureButton: {
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#e5dbff',
     padding: 10,
     borderRadius: 8,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   pictureButtonText: {
     fontSize: 14,
-    color: '#007bff',
+    color: '#5f3dc4',
+    fontWeight: '600',
   },
   editSection: {
     alignItems: 'center',
@@ -333,19 +349,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 8,
-    borderColor: '#007bff',
-    borderWidth: 1,
+    borderColor: '#d3a3ff',
+    borderWidth: 1.5,
+    backgroundColor: '#fff',
   },
   editButtonText: {
     marginLeft: 8,
-    color: '#007bff',
+    color: '#7b2cbf',
     fontWeight: '600',
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#28a745',
+    backgroundColor: '#7b2cbf',
     borderRadius: 8,
   },
   saveButtonText: {
@@ -355,12 +372,13 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 24,
+    paddingHorizontal: 10,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 12,
-    color: '#555',
+    color: '#7b2cbf',
   },
   item: {
     flexDirection: 'row',
@@ -379,5 +397,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#666',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
   },
 });

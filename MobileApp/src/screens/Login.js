@@ -8,14 +8,14 @@ import logo from '../assets/LOGO_BOOKSWAP.png';
 
 export default function Login({ navigation }) {
   const {
-    username,
     setUsername,
-    password,
     setPassword,
-    token,
     setToken,
     setPicture,
+    setLat,
+    setLng
   } = useContext(Context);
+  
   const [textName, setTextName] = useState('');
   const [textPwd, setTextPwd] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -42,9 +42,10 @@ export default function Login({ navigation }) {
       setToken(tokenResponse);
       setUsername(textName);
       setPassword(textPwd);
+      console.log("result.lat");
 
       const response2 = await fetch(
-        `http://localhost:8080/bookswap/userInfo?token=${tokenResponse}&username=${textName}`
+        `http://192.168.1.134:8080/bookswap/userInfo?token=${tokenResponse}&username=${textName}`
       );
 
       if (response2.ok) {
@@ -52,7 +53,12 @@ export default function Login({ navigation }) {
         result.profilePicture
           ? setPicture(toImageUri(result.profilePicture, "png"))
           : setPicture(Image.resolveAssetSource(logo).uri);
+        setLat(result.lat);
+        setLng(result.lng);
       }
+
+      console.log(result.lat);
+      console.log(result.lng);
 
       navigation.navigate('LoadingScreen');
     } catch (error) {

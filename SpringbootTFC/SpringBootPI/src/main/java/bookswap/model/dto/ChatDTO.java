@@ -1,29 +1,25 @@
 package bookswap.model.dto;
 
+import java.util.List;
+
 public class ChatDTO {
-    private String participant1Id;
-    private String participant2Id;
+	
+    private String currentUsername;
+    private List<String> usernames;
 
-    public ChatDTO() {}
-
-    public ChatDTO(String participant1Id, String participant2Id) {
-        this.participant1Id = participant1Id;
-        this.participant2Id = participant2Id;
+    public String getCurrentUsername() {
+        return currentUsername;
     }
 
-    public String getParticipant1Id() {
-        return participant1Id;
+    public void setCurrentUsername(String currentUsername) {
+        this.currentUsername = currentUsername;
     }
 
-    public void setParticipant1Id(String participant1Id) {
-        this.participant1Id = participant1Id;
+    public List<String> getUsernames() {
+        return usernames;
     }
 
-    public String getParticipant2Id() {
-        return participant2Id;
-    }
-
-    public void setParticipant2Id(String participant2Id) {
-        this.participant2Id = participant2Id;
+    public void setUsernames(List<String> usernames) {
+        this.usernames = usernames;
     }
 }

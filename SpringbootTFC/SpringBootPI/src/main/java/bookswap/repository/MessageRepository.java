@@ -1,8 +1,9 @@
 package bookswap.repository;
 
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.data.mongodb.repository.Query;
 import bookswap.model.entity.Message;
 
 public interface MessageRepository extends MongoRepository<Message, String> {
@@ -15,4 +16,6 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     // Método para encontrar todos los mensajes por un senderId y un receiverId
     List<Message> findBySenderIdAndReceiverId(String senderId, String receiverId);
+
+	Optional<Message> findTopByChatIdOrderByTimestampDesc(String id);
 }

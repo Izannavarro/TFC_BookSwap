@@ -96,7 +96,7 @@ export default Books = () => {
       return;
     }
 
-    const bookData = { ...formData, owner_username: username };
+    const bookData = { ...formData, ownerUsername: username };
 
     try {
       const response = await fetch('http://localhost:8080/bookswap/addBook', {
@@ -150,10 +150,10 @@ export default Books = () => {
             encoding: FileSystem.EncodingType.Base64,
           });
 
-          // Establecer la URL de la imagen en formato Base64
+          // Establecer la imagen en Base64
           setFormData({
             ...formData,
-            image_url: `data:image/jpeg;base64,${base64Image}`,
+            image_url: base64Image,
           });
         } catch (error) {
           console.error('Error al convertir la imagen a base64', error);

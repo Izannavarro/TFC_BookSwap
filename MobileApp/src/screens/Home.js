@@ -9,50 +9,42 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useEffect, useState, useContext } from 'react';
-import Geolocation from 'react-native-geolocation-service';
+import * as Location from 'expo-location';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
 import Context from './Context';
 
 export default function Home() {
-  const [location, setLocation] = useState(null);
   const [userMarkers, setUserMarkers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userModalVisible, setUserModalVisible] = useState(false);
+  const [location, setLocation] = useState(null); // ✅ nueva ubicación local
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const { token, username, picture } = useContext(Context);
+  const { token, username, picture, lat, lng } = useContext(Context);
 
   useEffect(() => {
-    const requestAndFetchLocation = async () => {
-      const granted = await Geolocation.requestAuthorization('whenInUse');
-      if (granted === 'granted') {
-        Geolocation.getCurrentPosition(
-          (pos) => setLocation(pos.coords),
-          (err) => console.warn(err.message),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-      } else {
-        Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación.');
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'No se pudo obtener tu ubicación.');
+        return;
       }
-    };
 
-    requestAndFetchLocation();
-    fetchUserCoordinates();
+      const loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc.coords);
+    })();
   }, []);
 
   useEffect(() => {
-    if (!isFocused) {
-      setSelectedUser(null);
-      setUserModalVisible(false);
-    }
-  }, [isFocused]);
+    fetchUserCoordinates();
+  }, []);
 
   const fetchUserCoordinates = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/bookswap/userLocations?username=${username}`
+        `http://localhost:8080/bookswap/userLocations?currentUsername=${username}`
       );
       setUserMarkers(res.data);
     } catch (error) {
@@ -77,6 +69,32 @@ export default function Home() {
     }
   };
 
+  const getInitialRegion = () => {
+    if (lat && lng) {
+      return {
+        latitude: lat,
+        longitude: lng,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    } else if (location) {
+      return {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    } else {
+      // Fallback por defecto
+      return {
+        latitude: 39.4699,
+        longitude: -0.3763,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -87,7 +105,7 @@ export default function Home() {
         />
         <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Image
-            source={{ uri: picture }}
+            source={{ uri: picture || 'https://placehold.co/40x40' }}
             style={styles.avatar}
           />
         </TouchableOpacity>
@@ -98,21 +116,7 @@ export default function Home() {
         <MapView
           style={styles.map}
           showsUserLocation={true}
-          initialRegion={
-            location
-              ? {
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }
-              : {
-                  latitude: 37.78825,
-                  longitude: -122.4324,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                }
-          }>
+          initialRegion={getInitialRegion()}>
           {userMarkers.map((user) => (
             <Marker
               key={user.username}
@@ -183,22 +187,40 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
-    width: '100%',
-    paddingHorizontal: 15,
-    paddingTop: 40,
-    paddingBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#d3a3ff',
-  },
-  logo: { width: 50, height: 40, resizeMode: 'contain' },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#a0c4ff',
-  },
+  width: '100%',
+  paddingHorizontal: 20,
+  paddingTop: 50,
+  paddingBottom: 20,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: '#c6a0ff', // puedes ajustar el tono aquí
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 5,
+  borderBottomLeftRadius: 15,
+  borderBottomRightRadius: 15,
+},
+logo: {
+  width: 80,
+  height: 60,
+  resizeMode: 'contain',
+},
+avatar: {
+  width: 45,
+  height: 45,
+  borderRadius: 22.5,
+  borderWidth: 1,
+  borderColor: '#fff',
+  backgroundColor: '#eee',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 4,
+},
   mapContainer: { flex: 1, overflow: 'hidden' },
   map: { flex: 1 },
   modalContainer: {
@@ -222,8 +244,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
   modalText: { fontSize: 14, textAlign: 'center', marginBottom: 10 },
-  modalSubtitle: { fontSize: 16, fontWeight: 'bold', marginTop: 10 },
-  modalBook: { fontSize: 14, marginVertical: 2 },
   closeButton: {
     marginTop: 15,
     padding: 10,

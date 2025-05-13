@@ -1,10 +1,10 @@
 {
-    "_id": "book123",
+    "id": "book123",
     "title": "The Little Prince",
     "author": "Antoine de Saint-Exupéry",
     "genre": "Fiction",
     "description": "A classic about the innocence and wisdom of a little traveling prince.",
     "image_url": "base64_encoded_image_here",
-    "owner_id": "user123",
+    "ownerUsername": "Iz",
     "publication_date": "2025-03-24T10:00:00"
 }

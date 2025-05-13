@@ -17,31 +17,43 @@ const ChatList = () => {
   const navigation = useNavigation();
 
   useEffect(() => {
-    // Llamar a fetchUserInfosIfNeeded y luego fetchChats
-    fetchUserInfosIfNeeded();
+    initializeChats();
   }, []);
 
-  // Cargar la información de los usuarios si es necesario
-  const fetchUserInfosIfNeeded = async () => {
-    if (usersInfo.length === 0) {
-      try {
+  const initializeChats = async () => {
+    try {
+      let userInfos = usersInfo;
+
+      // Si no tenemos info de usuarios, la pedimos
+      if (userInfos.length === 0) {
         const response = await axios.get(
           `http://localhost:8080/bookswap/getUsersInfo?token=${token}`
         );
-        setUsersInfo(response.data);
-        fetchChats(response.data);
-      } catch (error) {
-        console.error('Error fetching user info:', error);
+        userInfos = response.data;
+        setUsersInfo(userInfos);
       }
-    } else {
-      fetchChats(usersInfo);
+
+      // Creamos chats con todos los usuarios (excepto uno mismo)
+      const otherUsernames = userInfos
+        .map((user) => user.username)
+        .filter((uname) => uname !== username);
+
+      await axios.post('http://localhost:8080/bookswap/createChats', {
+        currentUsername: username,
+        usernames: otherUsernames,
+      });
+
+      // Cargamos los chats
+      await fetchChats(userInfos);
+    } catch (error) {
+      console.error('Error inicializando chats:', error);
     }
   };
 
   const fetchChats = async (userInfos) => {
     try {
       const response = await axios.get(
-        `http://localhost:8080/bookswap/getChats?username=${username}`
+        `http://localhost:8080/bookswap/getChats?username=${username}&token=${token}`
       );
       const chatsData = response.data;
 
@@ -59,14 +71,14 @@ const ChatList = () => {
           otherUserProfilePicture: otherUser?.profilePicture || null,
           otherUser: {
             username: otherUser?.username || 'Usuario Desconocido',
-            id: otherUser?.id || otherUser?._id || null, // 👈 Asegúrate de incluir el ID
+            id: otherUser?.id || otherUser?._id || null,
           },
         };
       });
 
       setChats(updatedChats);
     } catch (error) {
-      console.error('Error loading chats:', error);
+      console.error('Error cargando chats:', error);
     }
   };
 
@@ -75,7 +87,6 @@ const ChatList = () => {
     return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  // Renderizar cada chat
   const renderItem = ({ item }) => {
     const lastMessage = item.last_message || {};
 
@@ -87,8 +98,8 @@ const ChatList = () => {
             chatId: item._id,
             otherUsername: item.otherUser?.username,
             otherUserProfilePicture: item.otherUserProfilePicture,
-            receiverId: item.otherUser?.id, // 👈 Este es el usuario con quien estoy hablando
-            senderId: usersInfo.find((u) => u.username === username)?.id, // 👈 Este eres tú (emisor)
+            receiverId: item.otherUser?.id,
+            senderId: usersInfo.find((u) => u.username === username)?.id,
           })
         }>
         <Image

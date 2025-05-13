@@ -13,8 +13,7 @@ public interface UserRepository extends MongoRepository<User, String> {
 	@Query("{ 'username': ?0, 'password': ?1 }")
 	Optional<User> findByUserAndPassword(String username, String password);
 	
-	@Query(value = "{ 'username': ?0 }")
-	Optional<User> getUserByName(String name);
+	Optional<User> findByUsername(String username);
 	
 	 // Encontrar todos los usuarios (sin incluir al usuario actual)
     List<User> findByUsernameNot(String username);

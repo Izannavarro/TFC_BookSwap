@@ -12,19 +12,20 @@ public class Chat {
     private String id;
     private List<String> participants;
     private List<Message> messages;
+    private String creationDate;
 
     public Chat() {}
 
-    public Chat(List<String> participants, String created_at, List<Message> messages) {
+    public Chat(List<String> participants, List<Message> messages) {
         this.participants = participants;
         this.messages = messages;
     }
 
-    public String get_id() {
+    public String getId() {
         return id;
     }
 
-    public void set_id(String _id) {
+    public void setId(String _id) {
         this.id = _id;
     }
 
@@ -52,4 +53,12 @@ public class Chat {
                 ", messages=" + messages +
                 '}';
     }
+
+	public String getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(String creationDate) {
+		this.creationDate = creationDate;
+	}
 }

@@ -1,7 +1,8 @@
 package bookswap.model.dto;
 
 public class MessageInfo {
-
+	
+	private String messageId;
     private String senderId;
     private String content;
     private String timestamp;
@@ -9,7 +10,8 @@ public class MessageInfo {
 
     public MessageInfo() {}
 
-    public MessageInfo(String senderId, String content, String timestamp, String status) {
+    public MessageInfo(String messageId, String senderId, String content, String timestamp, String status) {
+    	this.messageId = messageId;
         this.senderId = senderId;
         this.content = content;
         this.timestamp = timestamp;
@@ -47,4 +49,12 @@ public class MessageInfo {
     public void setStatus(String status) {
         this.status = status;
     }
+
+	public String getMessageId() {
+		return messageId;
+	}
+
+	public void setMessageId(String messageId) {
+		this.messageId = messageId;
+	}
 }

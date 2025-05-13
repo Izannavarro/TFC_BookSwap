@@ -1,10 +1,9 @@
 {
-    "_id": "user123",
-    "name": "Carlos García",
-    "email": "carlos@example.com",
-    "address": "Calle Mayor, Madrid, Spain",
+    "id": "user123",
+    "username": "Carlos García",
+    "password": "hashcontra",
+    "profilePicture": "base64",
+    "address": "C Juan",
     "lat": 40.4168,
-    "lng": -3.7038,
-    "available_books": [],
-    "registration_date": "2025-03-24T10:00:00"
+    "lng": -3.7038
 }

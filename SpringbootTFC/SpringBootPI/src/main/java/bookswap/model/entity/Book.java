@@ -1,7 +1,5 @@
 package bookswap.model.entity;
 
-import java.time.LocalDate;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -81,19 +79,19 @@ public class Book {
         this.image_url = image_url;
     }
 
-    public String getOwner_username() {
+    public String getOwnerUsername() {
         return ownerUsername;
     }
 
-    public void setOwner_username(String owner_username) {
+    public void setOwnerUsername(String owner_username) {
         this.ownerUsername = owner_username;
     }
 
-    public String getPublication_date() {
+    public String getPublicationDate() {
         return publicationDate;
     }
 
-    public void setPublication_date(String localDate) {
+    public void setPublicationDate(String localDate) {
         this.publicationDate = localDate;
     }
 

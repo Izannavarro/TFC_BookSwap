@@ -7,7 +7,7 @@ import logo from '../assets/LOGO_BOOKSWAP.png';
 import imageToBase64 from '../utilities/toBase64';
 
 export default function Register({ navigation }) {
-  const { setUsername,  setPassword, setToken, setPicture } = useContext(Context);
+  const { setUsername,  setPassword, setToken, setPicture, setLat, setLng } = useContext(Context);
   const [textName, setTextName] = useState('');
   const [textPwd, setTextPwd] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,30 +36,28 @@ export default function Register({ navigation }) {
   }
 
   try {
+    // Paso 1: Validar dirección usando el backend
+    const geoResponse = await fetch(
+      `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
+    );
 
-    // // Paso 1: Validar dirección usando el backend
-    // const geoResponse = await fetch(
-    //   `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
-    // );
+    if (!geoResponse.ok) {
+      if (geoResponse.status === 404) {
+        alert('La dirección ingresada no es válida o está mal estructurada.');
+      } else {
+        alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
+      }
+      return;
+    }
 
-    // if (!geoResponse.ok) {
-    //   if (geoResponse.status === 404) {
-    //     alert('La dirección ingresada no es válida o está mal estructurada.');
-    //   } else {
-    //     alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
-    //   }
-    //   return;
-    // }
+    const geoData = await geoResponse.json();
+    if (!geoData.lat || !geoData.lng) {
+      alert('No se pudieron obtener las coordenadas de la dirección.');
+      return;
+    }
 
-    // const geoData = await geoResponse.json();
-    // if (!geoData.lat || !geoData.lng) {
-    //   alert('No se pudieron obtener las coordenadas de la dirección.');
-    //   return;
-    // }
-
-    // Paso 1: Usar valores predeterminados para latitud y longitud de Valencia (por ejemplo, Plaza del Ayuntamiento)
-    const lat = 39.4699;  // Latitud aproximada de Valencia
-    const lng = -0.3763;   // Longitud aproximada de Valencia
+    setLat(geoData.lat)
+    setLng(geoData.lng)
 
     // Paso 2: Crear usuario
     const response = await fetch('http://192.168.1.134:8080/bookswap/register', {

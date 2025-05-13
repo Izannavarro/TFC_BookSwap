@@ -14,7 +14,7 @@ import { Context } from './Context';
 
 export default ChatDetail = () => {
   const route = useRoute();
-  const { name, token } = useContext(Context);
+  const { username, token } = useContext(Context);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const {
@@ -40,7 +40,7 @@ export default ChatDetail = () => {
       setMessages(msgs);
 
       const toMarkViewed = msgs.filter(
-        (msg) => msg.receiver_id === name && msg.status !== 'viewed'
+        (msg) => msg.receiver_id === senderId && msg.status !== 'viewed'
       );
 
       if (toMarkViewed.length > 0) {
@@ -97,9 +97,8 @@ export default ChatDetail = () => {
 
     try {
       await axios.post(`http://localhost:8080/bookswap/addMessage`, newMsg);
-
-      setMessages((prev) => [...prev, newMsg]);
       setNewMessage('');
+      fetchMessages(); 
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backButton: {
-  fontSize: 20,
-  marginRight: 10,
-},
+    fontSize: 20,
+    marginRight: 10,
+  },
 });

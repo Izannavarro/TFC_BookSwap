@@ -9,10 +9,16 @@ export const Provider = ({ children }) => {
   const [token, setToken] = useState('');
   const [userBooks, setUserBooks] = useState([]);
   const [usersInfo, setUsersInfo] = useState([]);
+  const [lat, setLat] = useState([]);
+  const [lng, setLng] = useState([]);
 
   return (
     <Context.Provider
       value={{
+        lat,
+        setLat,
+        lng,
+        setLng,
         username,
         setUsername,
         picture,
@@ -21,10 +27,10 @@ export const Provider = ({ children }) => {
         setToken,
         password,
         setPassword,
-        userBooks, 
+        userBooks,
         setUserBooks,
-        usersInfo, 
-        setUsersInfo
+        usersInfo,
+        setUsersInfo,
       }}>
       {children}
     </Context.Provider>

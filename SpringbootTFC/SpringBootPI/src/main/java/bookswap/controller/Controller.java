@@ -6,7 +6,6 @@ import bookswap.repository.BookRepository;
 import bookswap.repository.ChatRepository;
 import bookswap.repository.MessageRepository;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +46,6 @@ import bookswap.model.entity.Book;
 import bookswap.model.entity.Chat;
 import bookswap.model.entity.Exchange;
 import bookswap.model.entity.Message;
-import bookswap.model.entity.GeocodeResponse;
-import bookswap.model.entity.GeocodeResult;
 import bookswap.model.entity.GeocodeService;
 import bookswap.model.Utilities;
 
@@ -127,7 +124,7 @@ public class Controller {
 	public ResponseEntity<Object> register(@RequestBody UserDTO userDTO) {
 	    String passwordHash = DigestUtils.sha256Hex(userDTO.getPassword());
 
-	    Optional<User> dbUser = userRepository.getUserByName(userDTO.getUsername());
+	    Optional<User> dbUser = userRepository.findByUsername(userDTO.getUsername());
 	    if (dbUser.isPresent()) {
 	        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 	    } else {
@@ -207,7 +204,7 @@ public class Controller {
 	    }
 
 	    // Buscar usuario por nombre
-	    Optional<User> optionalUser = userRepository.getUserByName(username);
+	    Optional<User> optionalUser = userRepository.findByUsername(username);
 	    if (optionalUser.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 	    }
@@ -219,7 +216,9 @@ public class Controller {
     		user.getId(),
 	        user.getUsername(),
 	        user.getAddress(),
-	        user.getProfilePicture()
+	        user.getProfilePicture(),
+	        user.getLat(),
+	        user.getLng()
 	    );
 
 	    return ResponseEntity.ok(userInfo);
@@ -227,35 +226,37 @@ public class Controller {
 	
 	
 	@PostMapping("bookswap/addBook")
-    public ResponseEntity<Object> addBook(@RequestBody BookDTO bookDTO) {
-		
-        // Buscar el usuario por nombre de usuario (username)
-        Optional<User> dbUser = userRepository.getUserByName(bookDTO.getOwner_username());
+	public ResponseEntity<Object> addBook(@RequestBody BookDTO bookDTO) {
+	    
+	    
+	    Optional<User> dbUser = userRepository.findByUsername(bookDTO.getOwnerUsername().trim());
 
-        // Si el usuario no existe, devolver un error
-        if (!dbUser.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
-        }
+	    
+	    if (dbUser.isEmpty()) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+	    }
 
-        // Crear el libro
-        Book newBook = new Book();
-        newBook.setTitle(bookDTO.getTitle());
-        newBook.setAuthor(bookDTO.getAuthor());
-        newBook.setGenre(bookDTO.getGenre());
-        newBook.setDescription(bookDTO.getDescription());
-        newBook.setImage_url(bookDTO.getImage_url());
-        newBook.setOwner_username(bookDTO.getOwner_username());
-        
-        String formattedDate = java.time.LocalDate.now().format(
-        	    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        	);
-    	newBook.setPublication_date(formattedDate);
+	    
+	    Book newBook = new Book();
+	    newBook.setTitle(bookDTO.getTitle());
+	    newBook.setAuthor(bookDTO.getAuthor());
+	    newBook.setGenre(bookDTO.getGenre());
+	    newBook.setDescription(bookDTO.getDescription());
+	    newBook.setImage_url(bookDTO.getImage_url());
+	    newBook.setOwnerUsername(bookDTO.getOwnerUsername());
 
-        // Guardar el libro en la base de datos
-        bookRepository.save(newBook);
+	    // Formatear la fecha de publicación
+	    String formattedDate = java.time.LocalDate.now().format(
+	            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+	    );
+	    newBook.setPublicationDate(formattedDate);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(newBook);
-    }
+	    // Guardar el libro en la base de datos
+	    bookRepository.save(newBook);
+
+	    return ResponseEntity.status(HttpStatus.CREATED).body(newBook);
+	}
+
 	
 	
 	@GetMapping("bookswap/getBooks")
@@ -269,7 +270,7 @@ public class Controller {
 	    }
 
 	    // Verificar que el usuario exista
-	    Optional<User> ownerUser = userRepository.getUserByName(ownerUsername);
+	    Optional<User> ownerUser = userRepository.findByUsername(ownerUsername);
 	    if (ownerUser.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
 	    }
@@ -334,7 +335,7 @@ public class Controller {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
 	    }
 
-	    Optional<User> user = userRepository.getUserByName(ownerUsername);
+	    Optional<User> user = userRepository.findByUsername(ownerUsername);
 	    if (user.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
 	    }
@@ -358,8 +359,8 @@ public class Controller {
 	    String ownerName = payload.get("ownerName");
 	    String receiverName = payload.get("receiverName");
 
-	    Optional<User> owner = userRepository.getUserByName(ownerName);
-	    Optional<User> receiver = userRepository.getUserByName(receiverName);
+	    Optional<User> owner = userRepository.findByUsername(ownerName);
+	    Optional<User> receiver = userRepository.findByUsername(receiverName);
 	    Optional<Book> book = bookRepository.findByTitleAndOwnerUsername(bookTitle,ownerName);
 
 	    if (owner.isEmpty() || receiver.isEmpty() || book.isEmpty()) {
@@ -394,7 +395,7 @@ public class Controller {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
 	    }
 
-	    Optional<User> receiver = userRepository.getUserByName(receiverUsername);
+	    Optional<User> receiver = userRepository.findByUsername(receiverUsername);
 	    if (receiver.isEmpty()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
 	    }
@@ -421,21 +422,68 @@ public class Controller {
 	}
 	
 	
+	@PostMapping("bookswap/createChats")
+	public ResponseEntity<Object> createChats(@RequestBody ChatDTO chatDTO) {
+	    String currentUsername = chatDTO.getCurrentUsername();
+	    List<String> usernames = chatDTO.getUsernames();
+
+	    int createdCount = 0;
+
+	    for (String otherUsername : usernames) {
+	        if (otherUsername.equals(currentUsername)) {
+	            continue; // Evitar chat consigo mismo
+	        }
+
+	        Optional<Chat> existingChat = chatRepository.findByParticipantsIn(currentUsername, otherUsername);
+	        if (existingChat.isPresent()) {
+	            continue; // Ya existe un chat con ese usuario
+	        }
+
+	        Chat newChat = new Chat();
+	        newChat.setParticipants(List.of(currentUsername, otherUsername));
+	        newChat.setMessages(null); // No mensajes al crear
+	        newChat.setCreationDate(java.time.LocalDate.now().toString());
+
+	        chatRepository.save(newChat);
+	        createdCount++;
+	    }
+
+	    return ResponseEntity.status(HttpStatus.CREATED).body("Se crearon " + createdCount + " chat(s).");
+	}
+
+	
+	
 	@GetMapping("bookswap/getChats")
-	public ResponseEntity<Object> getUserChats(@RequestParam("username") String username
-			, @RequestParam("token") String token) {
-		
-		// Validar el token
+	public ResponseEntity<Object> getUserChats(@RequestParam("username") String username,
+	                                           @RequestParam("token") String token) {
+
+	    // Validar el token
 	    if (!Utilities.checkUser(tokens, token)) {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
 	    }
-		
+
 	    List<Chat> chats = chatRepository.findByParticipantsContaining(username);
 
 	    List<Map<String, Object>> chatList = chats.stream().map(chat -> {
 	        Map<String, Object> result = new HashMap<>();
-	        result.put("_id", chat.get_id());
-	        result.put("participants", chat.getParticipants());	
+	        result.put("_id", chat.getId());
+	        result.put("participants", chat.getParticipants());
+
+	        // Obtener último mensaje (si existe)
+	        Optional<Message> lastMessageOpt = messageRepository.findTopByChatIdOrderByTimestampDesc(chat.getId());
+	        if (lastMessageOpt.isPresent()) {
+	            Message lastMsg = lastMessageOpt.get();
+	            Map<String, Object> lastMessage = new HashMap<>();
+	            lastMessage.put("sender_id", lastMsg.getSender_id());
+	            lastMessage.put("receiver_id", lastMsg.getReceiver_id());
+	            lastMessage.put("content", lastMsg.getContent());
+	            lastMessage.put("timestamp", lastMsg.getTimestamp());
+	            lastMessage.put("status", lastMsg.getStatus());
+	            result.put("last_message", lastMessage);
+	        } else {
+	            result.put("last_message", null); // Sin mensajes aún
+	        }
+
 	        return result;
 	    }).collect(Collectors.toList());
 
@@ -443,14 +491,17 @@ public class Controller {
 	}
 
 
+
 	@GetMapping("/bookswap/getMessages")
 	public ResponseEntity<List<MessageInfo>> getMessages(
-	        @RequestParam String chatId) {
+	        @RequestParam("chatId") String chatId,
+	        @RequestParam("token") String token) {
 	    
 	    List<Message> messages = messageRepository.findByChatIdOrderByTimestampAsc(chatId);
 
 	    List<MessageInfo> messageInfos = messages.stream()
 	        .map(msg -> new MessageInfo(
+        		msg.getMessage_id(),
 	            msg.getSender_id(),
 	            msg.getContent(),
 	            msg.getTimestamp(),
@@ -464,18 +515,22 @@ public class Controller {
 	
 	@PostMapping("/bookswap/addMessage")
 	public ResponseEntity<String> addMessage(@RequestBody MessageDTO messageDTO) {
-	    Message message = new Message();
-	    message.setMessage_id(UUID.randomUUID().toString());
-	    message.setSender_id(messageDTO.getSenderId());
-	    message.setReceiver_id(messageDTO.getReceiverId());
-	    message.setContent(messageDTO.getContent());
-	    message.setTimestamp(LocalDateTime.now().toString());
-	    message.setStatus("delivered");
-	    message.setChatId(messageDTO.getChatId());
-
-	    messageRepository.save(message);
-	    return ResponseEntity.ok("Message added");
+	    try {
+	        Message message = new Message(
+	            messageDTO.getChatId(),
+	            messageDTO.getSenderId(),
+	            messageDTO.getReceiverId(),
+	            messageDTO.getContent(),
+	            LocalDateTime.now().toString(),
+	            "delivered"
+	        );
+	        messageRepository.save(message);
+	        return ResponseEntity.ok("Message added");
+	    } catch (Exception e) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error saving message");
+	    }
 	}
+
 
 	
 	@PostMapping("/bookswap/markMessagesViewed")
@@ -500,7 +555,7 @@ public class Controller {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 		}
 
-		Optional<User> userOptional = userRepository.getUserByName(updatedUser.getOldName());
+		Optional<User> userOptional = userRepository.findByUsername(updatedUser.getOldName());
 		if (userOptional.isPresent()) {
 			String passwordHash = DigestUtils.sha256Hex(updatedUser.getPassword());
 			User user = userOptional.get();

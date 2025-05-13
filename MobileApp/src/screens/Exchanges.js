@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -290,7 +290,14 @@ export default Exchanges = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Intercambios Pendientes</Text>
             {receivedExchanges.length === 0 ? (
-              <Text>No tienes intercambios pendientes.</Text>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  marginVertical: 20,
+                  fontSize: 16,
+                }}>
+                You aren't waiting for any exchange.
+              </Text>
             ) : (
               receivedExchanges.map((ex, i) => (
                 <View key={i} style={{ marginBottom: 10 }}>

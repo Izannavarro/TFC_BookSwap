@@ -1,29 +1,13 @@
 import { Text, View, ActivityIndicator, StyleSheet, Image, ImageBackground } from 'react-native';
-import { useEffect, useState } from 'react';
-import { useAppContext } from './Context';
-import * as Font from 'expo-font';
+import { useEffect} from 'react';
 
 export default function LoadingScreen({ navigation }) {
-  const { theme } = useAppContext();
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-
   useEffect(() => {
-    // const loadFontsAndNavigate = async () => {
-    //   await Font.loadAsync({
-    //     'alegraya-sans': require('../assets/fonts/AlegreyaSansSC-Regular.ttf'),
-    //   });
-
-    //   setFontsLoaded(true);
 
       setTimeout(() => {
         navigation.replace('AppStack');
       }, 2000);
-    // };
-
-    // loadFontsAndNavigate();
   }, [navigation]);
-
-  // if (!fontsLoaded) return null;
 
   return (
     <ImageBackground
