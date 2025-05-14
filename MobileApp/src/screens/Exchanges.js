@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
-  TextInput,
   Alert,
   Button,
 } from 'react-native';
@@ -34,7 +33,7 @@ export default Exchanges = () => {
 
     if (!userBooks || userBooks.length === 0) {
       fetch(
-        `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+        `http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
       )
         .then((res) => res.json())
         .then(setUserBooks)
@@ -42,7 +41,7 @@ export default Exchanges = () => {
     }
 
     if (!usersInfo || usersInfo.length === 0) {
-      fetch(`http://localhost:8080/bookswap/getUsersInfo?token=${token}`)
+      fetch(`http://3.219.75.18:8080/bookswap/getUsersInfo?token=${token}`)
         .then((res) => res.json())
         .then(setUsersInfo)
         .catch(console.warn);
@@ -58,7 +57,7 @@ export default Exchanges = () => {
 
   const fetchMyExchanges = () => {
     fetch(
-      `http://localhost:8080/bookswap/getMyExchanges?ownerUsername=${username}&token=${token}`
+      `http://3.219.75.18:8080/bookswap/getMyExchanges?ownerUsername=${username}&token=${token}`
     )
       .then((res) => res.json())
       .then(setExchanges)
@@ -71,10 +70,15 @@ export default Exchanges = () => {
 
   const getUser = (userId) => usersInfo.find((u) => u._id === userId);
 
+  const getBookTitle = (bookId) => {
+    const book = getBookById(bookId);
+    return book ? book.title : 'Título no disponible';
+  };
+
   const fetchReceivedExchanges = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8080/bookswap/getReceivedExchanges?receiverUsername=${username}&token=${token}`
+        `http://3.219.75.18:8080/bookswap/getReceivedExchanges?receiverUsername=${username}&token=${token}`
       );
       const data = await response.json();
       setReceivedExchanges(data);
@@ -86,7 +90,7 @@ export default Exchanges = () => {
 
   const updateExchangeStatus = async (exchangeId, newStatus) => {
     try {
-      await fetch(`http://localhost:8080/bookswap/updateExchangeStatus`, {
+      await fetch(`http://3.219.75.18:8080/bookswap/updateExchangeStatus`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ exchangeId, status: newStatus }),
@@ -113,7 +117,7 @@ export default Exchanges = () => {
 
     try {
       const res = await fetch(
-        'http://localhost:8080/bookswap/addExchange?token=' + token,
+        'http://3.219.75.18:8080/bookswap/addExchange?token=' + token,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -128,7 +132,7 @@ export default Exchanges = () => {
       setOfferedBook('');
 
       // Eliminar el libro del backend
-      await fetch('http://localhost:8080/bookswap/deleteBook', {
+      await fetch('http://3.219.75.18:8080/bookswap/deleteBook', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -199,10 +203,7 @@ export default Exchanges = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[
-            styles.createButton,
-            { backgroundColor: '#FF9800', marginTop: 10 },
-          ]}
+          style={[styles.createButton, { backgroundColor: '#FF9800', marginTop: 10 }]}
           onPress={fetchReceivedExchanges}>
           <Text style={styles.buttonText}>Pending Exchanges</Text>
         </TouchableOpacity>
@@ -227,8 +228,7 @@ export default Exchanges = () => {
                 )}
                 <Text>
                   <Text style={styles.label}>Book:</Text>{' '}
-                  {getBookById(selectedExchange.book_id)?.title ||
-                    'Unknown Book'}
+                  {getBookById(selectedExchange.book_id)?.title || 'Unknown Book'}
                 </Text>
                 <Text>
                   <Text style={styles.label}>Owner ID:</Text>{' '}
@@ -264,15 +264,24 @@ export default Exchanges = () => {
               Con: {targetUser?.username || 'Usuario no seleccionado'}
             </Text>
 
-            <TextInput
-              placeholder="Tu libro ofrecido"
-              style={styles.input}
-              value={offeredBook}
-              onChangeText={setOfferedBook}
-            />
-            <Button title="Crear" onPress={handleCreateExchange} />
+            <Text style={styles.label}>Select Book:</Text>
+            <Picker
+              selectedValue={offeredBook}
+              onValueChange={(itemValue) => setOfferedBook(itemValue)}
+              style={styles.picker}>
+              <Picker.Item label="Select a book" value="" />
+              {userBooks.map((book) => (
+                <Picker.Item
+                  key={book._id}
+                  label={book.title}
+                  value={book.title}
+                />
+              ))}
+            </Picker>
+
+            <Button title="Create" onPress={handleCreateExchange} />
             <Button
-              title="Cancelar"
+              title="Cancel"
               color="gray"
               onPress={() => {
                 setFormVisible(false);
@@ -321,7 +330,7 @@ export default Exchanges = () => {
               ))
             )}
             <Button
-              title="Cerrar"
+              title="Close"
               onPress={() => {
                 setReceivedModalVisible(false);
                 setReceivedExchanges([]);
@@ -400,12 +409,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 15,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 8,
+  picker: {
+    height: 50,
+    width: '100%',
   },
   bookImage: {
     width: 70,

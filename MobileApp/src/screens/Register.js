@@ -36,9 +36,11 @@ export default function Register({ navigation }) {
   }
 
   try {
+
+    console.log(address);
     // Paso 1: Validar dirección usando el backend
     const geoResponse = await fetch(
-      `http://localhost:8080/bookswap/geocode?address=${encodeURIComponent(address)}`
+      `http://3.219.75.18:8080/bookswap/geocode?address=${address}`
     );
 
     if (!geoResponse.ok) {
@@ -56,11 +58,13 @@ export default function Register({ navigation }) {
       return;
     }
 
-    setLat(geoData.lat)
-    setLng(geoData.lng)
+    setLat(geoData.lat);
+    setLng(geoData.lng);
+    console.log(geoData.lat);
+    console.log(geoData.lng);
 
     // Paso 2: Crear usuario
-    const response = await fetch('http://192.168.1.134:8080/bookswap/register', {
+    const response = await fetch('http://3.219.75.18:8080/bookswap/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,8 +72,8 @@ export default function Register({ navigation }) {
           password: textPwd,
           profilePicture: null, 
           address: address,
-          lat: lat,
-          lng: lng,
+          lat: geoData.lat,
+          lng: geoData.lng,
       }),
     });
 

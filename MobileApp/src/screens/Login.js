@@ -27,7 +27,7 @@ export default function Login({ navigation }) {
     }
 
     try {
-      const response = await fetch('http://192.168.1.134:8080/bookswap/login', {
+      const response = await fetch('http://3.219.75.18:8080/bookswap/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: textName , password: textPwd }),
@@ -42,10 +42,9 @@ export default function Login({ navigation }) {
       setToken(tokenResponse);
       setUsername(textName);
       setPassword(textPwd);
-      console.log("result.lat");
 
       const response2 = await fetch(
-        `http://192.168.1.134:8080/bookswap/userInfo?token=${tokenResponse}&username=${textName}`
+        `http://3.219.75.18:8080/bookswap/userInfo?token=${tokenResponse}&username=${textName}`
       );
 
       if (response2.ok) {
@@ -56,9 +55,6 @@ export default function Login({ navigation }) {
         setLat(result.lat);
         setLng(result.lng);
       }
-
-      console.log(result.lat);
-      console.log(result.lng);
 
       navigation.navigate('LoadingScreen');
     } catch (error) {

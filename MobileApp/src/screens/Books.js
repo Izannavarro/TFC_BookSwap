@@ -10,11 +10,12 @@ import {
   TextInput,
   Button,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { launchImageLibrary } from 'react-native-image-picker';
 import Context from './Context';
-import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default Books = () => {
   const { username, token, userBooks, setUserBooks } = useContext(Context);
@@ -22,6 +23,7 @@ export default Books = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -31,16 +33,25 @@ export default Books = () => {
   });
   const [bookToDelete, setBookToDelete] = useState('');
 
-  useEffect(() => {
-    if (userBooks.length === 0) {
-      fetch(
-        `http://localhost:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
-      )
-        .then((res) => res.json())
-        .then(setUserBooks)
-        .catch(console.warn);
-    }
-  }, []);
+  useFocusEffect(
+  React.useCallback(() => {
+    setLoading(true);
+    fetch(
+      `http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setUserBooks(data);
+        } else {
+          console.log('Sin libros registrados');
+          setUserBooks([]);
+        }
+      })
+      .catch(console.warn)
+      .finally(() => setLoading(false));
+  }, [username, token])
+);
 
   const handleDeleteBook = async () => {
     if (!bookToDelete) {
@@ -49,14 +60,11 @@ export default Books = () => {
     }
 
     try {
-      // Enviar solicitud DELETE con el cuerpo de la petición en formato JSON
       const response = await fetch(
-        'http://localhost:8080/bookswap/deleteBook',
+        'http://3.219.75.18:8080/bookswap/deleteBook',
         {
           method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: bookToDelete,
             owner_username: username,
@@ -67,11 +75,8 @@ export default Books = () => {
       if (!response.ok) throw new Error('Error al eliminar el libro');
 
       setUserBooks(userBooks.filter((book) => book.title !== bookToDelete));
-
-      // Cerrar el modal
       setDeleteModalVisible(false);
       setBookToDelete('');
-
       Alert.alert('Éxito', 'El libro ha sido eliminado');
     } catch (error) {
       Alert.alert('Error', error.message);
@@ -79,18 +84,18 @@ export default Books = () => {
   };
 
   const handleAddBook = async () => {
-    if (!username) {
-      Alert.alert('Error', 'Debes estar logueado para añadir un libro');
-      return;
-    }
-
     const { title, author, genre, description, image_url } = formData;
+
     if (!title || !author || !genre || !description || !image_url) {
       Alert.alert('Campos incompletos', 'Por favor completa todos los campos');
       return;
     }
 
-    // Verificar si el libro ya existe por título
+    if (!image_url.startsWith('data:image/')) {
+      Alert.alert('Imagen inválida', 'Selecciona una imagen válida');
+      return;
+    }
+
     if (userBooks.some((b) => b.title === title)) {
       Alert.alert('Duplicado', 'Ya existe un libro con ese título');
       return;
@@ -99,7 +104,7 @@ export default Books = () => {
     const bookData = { ...formData, ownerUsername: username };
 
     try {
-      const response = await fetch('http://localhost:8080/bookswap/addBook', {
+      const response = await fetch('http://3.219.75.18:8080/bookswap/addBook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookData),
@@ -124,42 +129,28 @@ export default Books = () => {
     }
   };
 
-  // Función para seleccionar imagen desde la cámara o galería
-  const selectImage = () => {
-    const options = {
-      title: 'Selecciona una imagen',
-      chooseFromLibraryButtonTitle: 'Elegir de la galería',
-      takePhotoButtonTitle: 'Tomar foto',
+  const selectImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert(
+        'Permiso denegado',
+        'Se necesita permiso para acceder a la galería.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
-      mediaType: 'photo',
-      maxWidth: 800,
-      maxHeight: 800,
-    };
-
-    launchImageLibrary(options, async (response) => {
-      if (response.didCancel) {
-        console.log('El usuario canceló la selección de imagen');
-      } else if (response.errorCode) {
-        console.log('Error al seleccionar imagen', response.errorMessage);
-      } else {
-        try {
-          const imageUri = response.assets[0].uri;
-
-          // Usamos expo-file-system para leer el archivo y convertirlo a Base64
-          const base64Image = await FileSystem.readAsStringAsync(imageUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-
-          // Establecer la imagen en Base64
-          setFormData({
-            ...formData,
-            image_url: base64Image,
-          });
-        } catch (error) {
-          console.error('Error al convertir la imagen a base64', error);
-        }
-      }
+      base64: true,
     });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      const base64Image = `data:image/jpeg;base64,${asset.base64}`;
+      setFormData({ ...formData, image_url: base64Image });
+    }
   };
 
   const renderBookItem = ({ item }) => (
@@ -176,7 +167,14 @@ export default Books = () => {
 
   return (
     <View style={styles.container}>
-      {userBooks.length === 0 ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={{ marginTop: 10, color: '#4CAF50' }}>
+            Cargando libros...
+          </Text>
+        </View>
+      ) : userBooks.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>Añade un libro</Text>
         </View>
@@ -189,6 +187,7 @@ export default Books = () => {
         />
       )}
 
+      {/* Botones de acción */}
       <View style={styles.buttonContainer}>
         {userBooks.length < 5 && (
           <TouchableOpacity
@@ -220,11 +219,11 @@ export default Books = () => {
                 <Text>Author: {selectedBook.author}</Text>
                 <Text>Genre: {selectedBook.genre}</Text>
                 <Text>Description: {selectedBook.description}</Text>
-                <Text>Owner: {selectedBook.owner_username}</Text>
+                <Text>Owner: {selectedBook.ownerUsername}</Text>
                 <Text>
                   Published:{' '}
-                  {selectedBook.publication_date
-                    ? new Date(selectedBook.publication_date).toDateString()
+                  {selectedBook.publicationDate
+                    ? new Date(selectedBook.publicationDate).toDateString()
                     : 'N/A'}
                 </Text>
               </>
@@ -256,14 +255,16 @@ export default Books = () => {
             <TouchableOpacity
               style={styles.selectImageButton}
               onPress={selectImage}>
-              <Text style={styles.buttonText}>Seleccionar Imagen</Text>
+              <Text style={styles.buttonText}>
+                {formData.image_url ? 'Cambiar Imagen' : 'Seleccionar Imagen'}
+              </Text>
             </TouchableOpacity>
-            {formData.image_url ? (
+            {formData.image_url && (
               <Image
                 source={{ uri: formData.image_url }}
-                style={styles.image}
+                style={[styles.image, { marginVertical: 10 }]}
               />
-            ) : null}
+            )}
             <Button title="Añadir" onPress={handleAddBook} />
             <Button
               title="Cancelar"
@@ -412,4 +413,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 14,
   },
+  selectImageButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });

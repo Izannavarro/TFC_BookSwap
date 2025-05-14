@@ -33,7 +33,7 @@ export default ChatDetail = () => {
   const fetchMessages = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/bookswap/getMessages?chatId=${chatId}&token=${token}`
+        `http://3.219.75.18:8080/bookswap/getMessages?chatId=${chatId}&token=${token}`
       );
       const msgs = res.data;
 
@@ -44,7 +44,7 @@ export default ChatDetail = () => {
       );
 
       if (toMarkViewed.length > 0) {
-        await axios.post(`http://localhost:8080/bookswap/markMessagesViewed`, {
+        await axios.post(`http://3.219.75.18:8080/bookswap/markMessagesViewed`, {
           chatId: chatId,
           receiverId: receiverId,
         });
@@ -96,7 +96,7 @@ export default ChatDetail = () => {
     };
 
     try {
-      await axios.post(`http://localhost:8080/bookswap/addMessage`, newMsg);
+      await axios.post(`http://3.219.75.18:8080/bookswap/addMessage`, newMsg);
       setNewMessage('');
       fetchMessages(); 
     } catch (err) {

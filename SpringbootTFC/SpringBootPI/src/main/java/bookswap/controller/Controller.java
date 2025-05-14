@@ -6,6 +6,8 @@ import bookswap.repository.BookRepository;
 import bookswap.repository.ChatRepository;
 import bookswap.repository.MessageRepository;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,6 +102,9 @@ public class Controller {
 	@Autowired
 	private GeocodeService geocodeService;
 	
+	@Autowired
+	private RestTemplate restTemplate;
+	
 	/**
 	 * @param userDTO Object with the new user's username and password
 	 * @return HttpStatus NOT_FOUND if the user is not present, or HttpStatus OK if
@@ -151,12 +156,11 @@ public class Controller {
 	@GetMapping("bookswap/geocode")
 	public ResponseEntity<Object> getCoordinates(@RequestParam("address") String address) {
 	    try {
-	        // Crea la URL de Google Geocoding API
+	    	
+	    	String encodedAddress = URLEncoder.encode(address, StandardCharsets.UTF_8);
 	        String geocodeUrl = "https://maps.googleapis.com/maps/api/geocode/json?address=" 
-	                + address.replace(" ", "+") + "&key=" + googleApiKey;
+	                + encodedAddress + "&key=" + "AIzaSyCG_CRoG2ue65rKCKMtKydpNV-2FAmGkQk";
 
-	        // Realiza la petición HTTP
-	        RestTemplate restTemplate = new RestTemplate();
 	        String jsonResponse = restTemplate.getForObject(geocodeUrl, String.class);
 
 	        // Parsear el JSON de respuesta
@@ -166,7 +170,8 @@ public class Controller {
 	            return ResponseEntity.status(HttpStatus.OK).body(responseDTO);
 	        } else {
 	            // Si no encontramos coordenadas, retornamos un error 404
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Coordinates not found.");
+	        	System.out.println("JSON response from Google API: " + jsonResponse);
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Coordinates not found."+" JSON response from Google API: " + jsonResponse + encodedAddress);
 	        }
 	    } catch (Exception e) {
 	        // Si ocurre un error, retornamos un error 500

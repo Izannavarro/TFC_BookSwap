@@ -4,6 +4,9 @@ public class GeocodeResponseDTO {
     private double lat;
     private double lng;
 
+    public GeocodeResponseDTO() {
+    }
+
     public GeocodeResponseDTO(double lat, double lng) {
         this.lat = lat;
         this.lng = lng;

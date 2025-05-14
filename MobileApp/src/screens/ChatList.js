@@ -27,7 +27,7 @@ const ChatList = () => {
       // Si no tenemos info de usuarios, la pedimos
       if (userInfos.length === 0) {
         const response = await axios.get(
-          `http://localhost:8080/bookswap/getUsersInfo?token=${token}`
+          `http://3.219.75.18:8080/bookswap/getUsersInfo?token=${token}`
         );
         userInfos = response.data;
         setUsersInfo(userInfos);
@@ -38,7 +38,7 @@ const ChatList = () => {
         .map((user) => user.username)
         .filter((uname) => uname !== username);
 
-      await axios.post('http://localhost:8080/bookswap/createChats', {
+      await axios.post('http://3.219.75.18:8080/bookswap/createChats', {
         currentUsername: username,
         usernames: otherUsernames,
       });
@@ -53,7 +53,7 @@ const ChatList = () => {
   const fetchChats = async (userInfos) => {
     try {
       const response = await axios.get(
-        `http://localhost:8080/bookswap/getChats?username=${username}&token=${token}`
+        `http://3.219.75.18:8080/bookswap/getChats?username=${username}&token=${token}`
       );
       const chatsData = response.data;
 
@@ -94,7 +94,7 @@ const ChatList = () => {
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() =>
-          navigation.navigate('ChatDetail', {
+          navigation.navigate('ChatDetails', {
             chatId: item._id,
             otherUsername: item.otherUser?.username,
             otherUserProfilePicture: item.otherUserProfilePicture,

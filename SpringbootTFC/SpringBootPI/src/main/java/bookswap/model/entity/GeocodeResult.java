@@ -1,6 +1,10 @@
 package bookswap.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class GeocodeResult {
+
+    @JsonProperty("geometry")
     private Geometry geometry;
 
     public Geometry getGeometry() {
@@ -12,6 +16,8 @@ public class GeocodeResult {
     }
 
     public static class Geometry {
+
+        @JsonProperty("location")
         private Location location;
 
         public Location getLocation() {
@@ -24,7 +30,11 @@ public class GeocodeResult {
     }
 
     public static class Location {
+
+        @JsonProperty("lat")
         private double lat;
+
+        @JsonProperty("lng")
         private double lng;
 
         public double getLat() {

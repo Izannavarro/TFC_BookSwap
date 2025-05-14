@@ -19,10 +19,12 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userModalVisible, setUserModalVisible] = useState(false);
   const [location, setLocation] = useState(null); // ✅ nueva ubicación local
+  const [noUsersModalVisible, setNoUsersModalVisible] = useState(false);
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const { token, username, picture, lat, lng } = useContext(Context);
+  const { token, username, picture, lat, lng, setLat, setLng } =
+    useContext(Context);
 
   useEffect(() => {
     (async () => {
@@ -33,7 +35,8 @@ export default function Home() {
       }
 
       const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc.coords);
+      setLat(loc.coords.latitude);
+      setLng(loc.coords.longitude);
     })();
   }, []);
 
@@ -44,15 +47,38 @@ export default function Home() {
   const fetchUserCoordinates = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:8080/bookswap/userLocations?currentUsername=${username}`
+        `http://3.219.75.18:8080/bookswap/userLocations?currentUsername=${username}`
       );
-      setUserMarkers(res.data);
+
+      if (res.data.length === 0) {
+        if (location || (lat && lng)) {
+          const userLocation = location || { latitude: lat, longitude: lng };
+
+          setUserMarkers([
+            {
+              username: 'THERE ARE NO USERS NEAR U',
+              address: '',
+              lat: userLocation.latitude,
+              lng: userLocation.longitude,
+            },
+          ]);
+        } else {
+          setUserMarkers([]); // No se puede mostrar ningún marcador
+        }
+      } else {
+        setUserMarkers(res.data);
+      }
     } catch (error) {
       console.warn('Error fetching user coordinates:', error.message);
     }
   };
 
   const handleMarkerPress = async (name) => {
+    if (name === 'THERE ARE NO USERS NEAR U') {
+      setNoUsersModalVisible(true);
+      return;
+    }
+
     if (selectedUser && selectedUser.username === name) {
       setUserModalVisible(true);
       return;
@@ -60,7 +86,7 @@ export default function Home() {
 
     try {
       const res = await axios.get(
-        `http://localhost:8080/bookswap/userInfo?token=${token}&username=${name}`
+        `http://3.219.75.18:8080/bookswap/userInfo?token=${token}&username=${name}`
       );
       setSelectedUser(res.data);
       setUserModalVisible(true);
@@ -180,6 +206,27 @@ export default function Home() {
           </View>
         </Modal>
       )}
+
+      {/* Modal cuando no hay usuarios cerca */}
+      <Modal
+        visible={noUsersModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setNoUsersModalVisible(false)}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>¡No hay usuarios cerca de ti!</Text>
+            <Text style={styles.modalText}>
+              Intenta actualizar tu ubicación o vuelve más tarde.
+            </Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setNoUsersModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -187,40 +234,40 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
-  width: '100%',
-  paddingHorizontal: 20,
-  paddingTop: 50,
-  paddingBottom: 20,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  backgroundColor: '#c6a0ff', // puedes ajustar el tono aquí
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-  elevation: 5,
-  borderBottomLeftRadius: 15,
-  borderBottomRightRadius: 15,
-},
-logo: {
-  width: 80,
-  height: 60,
-  resizeMode: 'contain',
-},
-avatar: {
-  width: 45,
-  height: 45,
-  borderRadius: 22.5,
-  borderWidth: 1,
-  borderColor: '#fff',
-  backgroundColor: '#eee',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-  elevation: 4,
-},
+    width: '100%',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#000000', // puedes ajustar el tono aquí
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
+  },
+  logo: {
+    width: 80,
+    height: 60,
+    resizeMode: 'contain',
+  },
+  avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    borderWidth: 1,
+    borderColor: '#fff',
+    backgroundColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   mapContainer: { flex: 1, overflow: 'hidden' },
   map: { flex: 1 },
   modalContainer: {

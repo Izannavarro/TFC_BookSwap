@@ -8,16 +8,13 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  PermissionsAndroid,
-  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import Context from './Context';
 import axios from 'axios';
-import imageToBase64 from '../utilities/toBase64';
-import logo from '../assets/LOGO_BOOKSWAP.png';
+import logo from '../assets/LOGO_BOOKSWAP.png'; // Cambia esto si no tienes la imagen
 
 const Settings = () => {
   const {
@@ -44,7 +41,7 @@ const Settings = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.get(`http://localhost:8080/bookswap/logout?token=${token}`);
+      await axios.get(`http://3.219.75.18:8080/bookswap/logout?token=${token}`);
     } catch (err) {
       console.warn('Logout fallido:', err);
     } finally {
@@ -67,7 +64,7 @@ const Settings = () => {
           onPress: async () => {
             try {
               const res = await axios.delete(
-                'http://localhost:8080/bookswap/deleteAccount',
+                'http://3.219.75.18:8080/bookswap/deleteAccount',
                 {
                   params: { name: username, password, token },
                 }
@@ -91,61 +88,59 @@ const Settings = () => {
     );
   };
 
-  const requestPermissions = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      ]);
-      return (
-        granted['android.permission.CAMERA'] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-        granted['android.permission.READ_EXTERNAL_STORAGE'] ===
-          PermissionsAndroid.RESULTS.GRANTED
-      );
-    }
-    return true;
-  };
-
-  const handleImageSelection = async () => {
-    const granted = await requestPermissions();
-    if (!granted) {
-      Alert.alert(
-        'Permisos requeridos',
-        'Se necesitan permisos para acceder a la cámara o galería.'
-      );
-      return;
-    }
-
+  const handleImageSelection = () => {
     Alert.alert('Cambiar foto', 'Selecciona el origen de la imagen', [
       {
         text: 'Cámara',
-        onPress: () => {
-          launchCamera({ mediaType: 'photo' }, async (response) => {
-            if (response.assets && response.assets[0]) {
-              const uri = response.assets[0].uri;
-              setAvatarUri(uri);
-              const base64Image = await imageToBase64(uri);
-              setPicture(base64Image);
-            }
-          });
-        },
+        onPress: pickFromCamera,
       },
       {
         text: 'Galería',
-        onPress: () => {
-          launchImageLibrary({ mediaType: 'photo' }, async (response) => {
-            if (response.assets && response.assets[0]) {
-              const uri = response.assets[0].uri;
-              setAvatarUri(uri);
-              const base64Image = await imageToBase64(uri);
-              setPicture(base64Image);
-            }
-          });
-        },
+        onPress: pickFromGallery,
       },
       { text: 'Cancelar', style: 'cancel' },
     ]);
+  };
+
+  const pickFromGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permisos requeridos', 'Se necesita acceso a tu galería.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      base64: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const image = result.assets[0];
+      setAvatarUri(image.uri);
+      setPicture(`data:image/jpeg;base64,${image.base64}`);
+    }
+  };
+
+  const pickFromCamera = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permisos requeridos', 'Se necesita acceso a tu cámara.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      base64: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const image = result.assets[0];
+      setAvatarUri(image.uri);
+      setPicture(`data:image/jpeg;base64,${image.base64}`);
+    }
   };
 
   const handleSave = async () => {
@@ -160,18 +155,13 @@ const Settings = () => {
     }
 
     try {
-      let base64Image = picture;
-      if (avatarUri && avatarUri !== picture) {
-        base64Image = await imageToBase64(avatarUri);
-      }
-
       const res = await axios.put(
-        `http://localhost:8080/bookswap/updateUser?token=${token}`,
+        `http://3.219.75.18:8080/bookswap/updateUser?token=${token}`,
         {
           oldName: username,
           newName: editedName,
           password: editedPassword,
-          profilePicture: base64Image,
+          profilePicture: picture,
         }
       );
 
@@ -179,7 +169,6 @@ const Settings = () => {
         setUsername(editedName);
         setPassword(editedPassword);
         setIsEditing(false);
-        setPicture(base64Image);
         Alert.alert('Actualizado', 'Tu perfil ha sido actualizado.');
       }
     } catch (err) {
