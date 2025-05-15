@@ -3,26 +3,28 @@ package bookswap.model.dto;
 public class ExchangeDTO {
 	
 	private String id;
-    private String book_id;
-    private String owner_id;
-    private String receiver_id;
+    private String bookId;
+    private String ownerId;
+    private String receiverId;
     private String status;  // Este estará en "pending" cuando lo creemos
-    private String exchange_date;
+    private String exchangeDate;
 
     // Constructor
-    public ExchangeDTO(String book_id, String owner_id, String receiver_id, String status, String exchange_date) {
-        this.book_id = book_id;
-        this.owner_id = owner_id;
-        this.receiver_id = receiver_id;
+    public ExchangeDTO(String bookId, String ownerId, String receiverId, String status, String exchangeDate) {
+        this.bookId = bookId;
+        this.ownerId = ownerId;
+        this.receiverId = receiverId;
         this.status = status;
-        this.exchange_date = exchange_date;
+        this.exchangeDate = exchangeDate;
     }
     
-    public ExchangeDTO(String id, String owner_id, String status) {
-    	this.id = id;
-    	this.owner_id = owner_id;
-    	this.status = status;
+    public ExchangeDTO(String id, String ownerId, String status) {
+        this.id = id;
+        this.ownerId = ownerId;
+        this.status = status;
     }
+    
+    public ExchangeDTO() {}
 
     // Getters y setters
     
@@ -33,30 +35,6 @@ public class ExchangeDTO {
     public void setId(String id) {
         this.id = id;
     }
-    
-    public String getBook_id() {
-        return book_id;
-    }
-
-    public void setBook_id(String book_id) {
-        this.book_id = book_id;
-    }
-
-    public String getOwner_id() {
-        return owner_id;
-    }
-
-    public void setOwner_id(String owner_id) {
-        this.owner_id = owner_id;
-    }
-
-    public String getReceiver_id() {
-        return receiver_id;
-    }
-
-    public void setReceiver_id(String receiver_id) {
-        this.receiver_id = receiver_id;
-    }
 
     public String getStatus() {
         return status;
@@ -66,11 +44,35 @@ public class ExchangeDTO {
         this.status = status;
     }
 
-    public String getExchange_date() {
-        return exchange_date;
-    }
+	public String getBookId() {
+		return bookId;
+	}
 
-    public void setExchange_date(String exchange_date) {
-        this.exchange_date = exchange_date;
-    }
+	public void setBookId(String bookId) {
+		this.bookId = bookId;
+	}
+
+	public String getOwnerId() {
+		return ownerId;
+	}
+
+	public void setOwnerId(String ownerId) {
+		this.ownerId = ownerId;
+	}
+
+	public String getReceiverId() {
+		return receiverId;
+	}
+
+	public void setReceiverId(String receiverId) {
+		this.receiverId = receiverId;
+	}
+
+	public String getExchangeDate() {
+		return exchangeDate;
+	}
+
+	public void setExchangeDate(String exchangeDate) {
+		this.exchangeDate = exchangeDate;
+	}
 }

@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { Context } from './Context';
+import Context from './Context';
 
-export default ChatDetail = () => {
+export default ChatDetails = () => {
   const route = useRoute();
-  const { username, token } = useContext(Context);
+  const { token } = useContext(Context);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const {
@@ -24,6 +24,7 @@ export default ChatDetail = () => {
     receiverId,
     senderId,
   } = route.params;
+
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -40,14 +41,17 @@ export default ChatDetail = () => {
       setMessages(msgs);
 
       const toMarkViewed = msgs.filter(
-        (msg) => msg.receiver_id === senderId && msg.status !== 'viewed'
+        (msg) => msg.receiverId === senderId && msg.status !== 'viewed'
       );
 
       if (toMarkViewed.length > 0) {
-        await axios.post(`http://3.219.75.18:8080/bookswap/markMessagesViewed`, {
-          chatId: chatId,
-          receiverId: receiverId,
-        });
+        await axios.post(
+          `http://3.219.75.18:8080/bookswap/markMessagesViewed`,
+          {
+            chatId: chatId,
+            receiverId: receiverId,
+          }
+        );
       }
     } catch (err) {
       console.error('Error loading messages:', err);
@@ -55,7 +59,7 @@ export default ChatDetail = () => {
   };
 
   const renderMessage = ({ item }) => {
-    const isSender = item.sender_id === senderId;
+    const isSender = item.senderId === senderId;
 
     return (
       <View
@@ -98,7 +102,7 @@ export default ChatDetail = () => {
     try {
       await axios.post(`http://3.219.75.18:8080/bookswap/addMessage`, newMsg);
       setNewMessage('');
-      fetchMessages(); 
+      fetchMessages();
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -117,12 +121,14 @@ export default ChatDetail = () => {
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
         <Image
-          source={{
-            uri:
-              otherUserProfilePicture || require('../assets/LOGO_BOOKSWAP.png'),
-          }}
+          source={
+            otherUserProfilePicture
+              ? { uri: `data:image/png;base64,${otherUserProfilePicture}` }
+              : require('../assets/LOGO_BOOKSWAP.png')
+          }
           style={styles.avatar}
         />
+
         <Text style={styles.headerText}>{otherUsername}</Text>
       </View>
 
@@ -153,65 +159,101 @@ export default ChatDetail = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: {
+    flex: 1,
+    backgroundColor: '#EBEBEB', // gris claro de fondo general
+    paddingTop: 12,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f5f5f5',
+    padding: 14,
+    backgroundColor: '#FFBD77', // Naranja claro
     borderBottomWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#B25B00', // Marrón oscuro
+    elevation: 3,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: '#B25B00',
   },
-  headerText: { fontSize: 16, fontWeight: 'bold' },
+  headerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  backButton: {
+    fontSize: 24,
+    marginRight: 12,
+    color: '#006838', // verde oscuro
+  },
+
   messageBubble: {
     maxWidth: '75%',
-    borderRadius: 12,
-    padding: 10,
-    marginVertical: 4,
+    borderRadius: 16,
+    padding: 12,
+    marginVertical: 6,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
   },
   messageLeft: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     alignSelf: 'flex-start',
+    borderTopLeftRadius: 0,
+    borderColor: '#FFBD77',
+    borderWidth: 1,
   },
   messageRight: {
-    backgroundColor: '#dcf8c6',
+    backgroundColor: '#96cf24', // Verde claro
     alignSelf: 'flex-end',
+    borderTopRightRadius: 0,
   },
-  messageText: { fontSize: 14 },
+  messageText: {
+    fontSize: 15,
+    color: '#222',
+  },
   metaInfo: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 4,
+    marginTop: 5,
   },
-  timestamp: { fontSize: 10, color: '#555' },
+  timestamp: {
+    fontSize: 10,
+    color: '#777',
+  },
   inputContainer: {
     flexDirection: 'row',
     padding: 10,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#CCCCCC',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
-    backgroundColor: '#eee',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 25,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    fontSize: 15,
+    borderColor: '#ccc',
+    borderWidth: 1,
   },
   sendButton: {
-    backgroundColor: '#007AFF',
-    marginLeft: 8,
-    borderRadius: 20,
-    paddingHorizontal: 15,
+    backgroundColor: '#006838', // Verde oscuro
+    marginLeft: 10,
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     justifyContent: 'center',
-  },
-  backButton: {
-    fontSize: 20,
-    marginRight: 10,
+    alignItems: 'center',
   },
 });
+

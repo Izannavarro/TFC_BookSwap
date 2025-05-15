@@ -1,6 +1,8 @@
 package bookswap.model.dto;
 
 public class BookDTO {
+	
+	private String id;
     private String title;
     private String author;
     private String genre;
@@ -68,11 +70,19 @@ public class BookDTO {
         this.ownerUsername = ownerUsername;
     }
 
-    public String getPublication_date() {
+    public String getPublicationDate() {
         return publicationDate;
     }
 
-    public void setPublication_date(String publication_date) {
-        this.publicationDate = publication_date;
+    public void setPublicationDate(String publicationDate) {
+        this.publicationDate = publicationDate;
     }
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 }

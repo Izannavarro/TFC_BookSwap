@@ -36,20 +36,18 @@ export default Books = () => {
   useFocusEffect(
   React.useCallback(() => {
     setLoading(true);
-    fetch(
-      `http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
-    )
+    fetch(`http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
           setUserBooks(data);
         } else {
-          console.log('Sin libros registrados');
           setUserBooks([]);
         }
       })
       .catch(console.warn)
       .finally(() => setLoading(false));
+
   }, [username, token])
 );
 

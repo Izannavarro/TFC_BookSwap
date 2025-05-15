@@ -413,7 +413,7 @@ public class Controller {
 	
 	@PutMapping("bookswap/updateExchangeStatus")
 	public ResponseEntity<?> updateExchangeStatus(@RequestBody ExchangeDTO dto) {
-	    Optional<Exchange> optionalExchange = exchangeRepository.findByIdAndOwnerId(dto.getId(),dto.getOwner_id());
+	    Optional<Exchange> optionalExchange = exchangeRepository.findByIdAndOwnerId(dto.getId(),dto.getOwnerId());
 
 	    if (!optionalExchange.isPresent()) {
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Exchange not found");
