@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -15,7 +16,6 @@ import * as ImagePicker from 'expo-image-picker';
 import Context from './Context';
 import axios from 'axios';
 import logo from '../assets/LOGO_BOOKSWAP.png';
-import { ImageBackground } from 'react-native';
 
 const Settings = () => {
   const {
@@ -28,7 +28,7 @@ const Settings = () => {
     picture,
     setPicture,
     setUserBooks,
-    setUsersInfo
+    setUsersInfo,
   } = useContext(Context);
 
   const navigation = useNavigation();
@@ -58,7 +58,7 @@ const Settings = () => {
     try {
       await axios.get(`http://3.219.75.18:8080/bookswap/logout?token=${token}`);
     } catch (err) {
-      console.warn('Logout fallido:', err);
+      console.warn('Logout failed:', err);
     } finally {
       setToken(null);
       setUsername('');
@@ -71,12 +71,12 @@ const Settings = () => {
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Eliminar cuenta',
-      '¿Estás seguro de que quieres eliminar tu cuenta?',
+      'Delete Account',
+      'Are you sure you want to delete your account?',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Sí, eliminar',
+          text: 'Yes, delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -93,11 +93,11 @@ const Settings = () => {
                 setPassword('');
                 navigation.navigate('Login');
               } else {
-                Alert.alert('Error', 'No se pudo eliminar la cuenta.');
+                Alert.alert('Error', 'Failed to delete account.');
               }
             } catch (err) {
-              console.error('Error al eliminar cuenta:', err);
-              Alert.alert('Error', 'Fallo al eliminar la cuenta.');
+              console.error('Error deleting account:', err);
+              Alert.alert('Error', 'Account deletion failed.');
             }
           },
         },
@@ -106,17 +106,17 @@ const Settings = () => {
   };
 
   const handleImageSelection = () => {
-    Alert.alert('Cambiar foto', 'Selecciona el origen de la imagen', [
-      { text: 'Cámara', onPress: pickFromCamera },
-      { text: 'Galería', onPress: pickFromGallery },
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert('Change Profile Picture', 'Select image source', [
+      { text: 'Camera', onPress: pickFromCamera },
+      { text: 'Gallery', onPress: pickFromGallery },
+      { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
   const pickFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permisos requeridos', 'Se necesita acceso a tu galería.');
+      Alert.alert('Permission required', 'Access to your gallery is needed.');
       return;
     }
 
@@ -137,7 +137,7 @@ const Settings = () => {
   const pickFromCamera = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permisos requeridos', 'Se necesita acceso a tu cámara.');
+      Alert.alert('Permission required', 'Access to your camera is needed.');
       return;
     }
 
@@ -161,7 +161,8 @@ const Settings = () => {
       (avatarUri === null || avatarUri === picture);
 
     if (noChanges) {
-      Alert.alert('Sin cambios', 'No se han realizado cambios en tu perfil.');
+      Alert.alert('No Changes', 'No changes were made to your profile.');
+      setIsEditing(false);
       return;
     }
 
@@ -180,11 +181,11 @@ const Settings = () => {
         setUsername(editedName);
         setPassword(editedPassword);
         setIsEditing(false);
-        Alert.alert('Actualizado', 'Tu perfil ha sido actualizado.');
+        Alert.alert('Updated', 'Your profile has been updated.');
       }
     } catch (err) {
-      console.error('Error actualizando usuario:', err);
-      Alert.alert('Error', 'No se pudo actualizar tu perfil.');
+      console.error('Error updating user:', err);
+      Alert.alert('Error', 'Could not update your profile.');
     }
   };
 
@@ -210,7 +211,7 @@ const Settings = () => {
               value={editedName}
               onChangeText={setEditedName}
               editable={isEditing}
-              placeholder="Nombre"
+              placeholder="Username"
             />
           </View>
           <View style={styles.inputRow}>
@@ -221,7 +222,7 @@ const Settings = () => {
               onChangeText={setEditedPassword}
               editable={isEditing}
               secureTextEntry
-              placeholder="Contraseña"
+              placeholder="Password"
             />
           </View>
         </View>
@@ -231,7 +232,7 @@ const Settings = () => {
             style={styles.pictureButton}
             onPress={handleImageSelection}>
             <Text style={styles.pictureButtonText}>
-              Actualizar foto de perfil
+              Update profile picture
             </Text>
           </TouchableOpacity>
         )}
@@ -242,12 +243,12 @@ const Settings = () => {
               style={styles.editButton}
               onPress={() => setIsEditing(true)}>
               <Icon name="create-outline" size={20} color="#007bff" />
-              <Text style={styles.editButtonText}>Editar perfil</Text>
+              <Text style={styles.editButtonText}>Edit profile</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Icon name="checkmark-done-outline" size={20} color="#fff" />
-              <Text style={styles.saveButtonText}>Guardar cambios</Text>
+              <Text style={styles.saveButtonText}>Save changes</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -257,23 +258,22 @@ const Settings = () => {
 
           <TouchableOpacity style={styles.item} onPress={handleLogout}>
             <Icon name="log-out-outline" size={20} color="#555" />
-            <Text style={styles.itemText}>Cerrar sesión</Text>
+            <Text style={styles.itemText}>Log out</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.item} onPress={handleDeleteAccount}>
             <Icon name="trash-outline" size={20} color="red" />
             <Text style={[styles.itemText, { color: 'red' }]}>
-              Eliminar cuenta
+              Delete account
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacidad</Text>
+          <Text style={styles.sectionTitle}>Privacy</Text>
           <Text style={styles.policyText}>
-            En BookSwap respetamos tu privacidad. Tus datos personales no serán
-            compartidos con terceros y puedes solicitar su eliminación en
-            cualquier momento.
+            At BookSwap, we respect your privacy. Your personal data will not be
+            shared with third parties, and you can request its deletion at any time.
           </Text>
         </View>
       </ScrollView>
@@ -381,12 +381,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-  marginBottom: 40,
-  paddingHorizontal: 10,
-  backgroundColor: '#fff', 
-  padding: 16,             
-  borderRadius: 12,        
-},
+    marginBottom: 40,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',

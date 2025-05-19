@@ -20,9 +20,9 @@ export default function Login({ navigation }) {
   const [textPwd, setTextPwd] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  const toApp = async () => {
+   const toApp = async () => {
     if (!textName || !textPwd) {
-      Alert.alert('El usuario o la contraseña no pueden estar vacíos.');
+      Alert.alert('Username or password cannot be empty.');
       return;
     }
 
@@ -34,7 +34,7 @@ export default function Login({ navigation }) {
       });
 
       if (!response.ok) {
-        Alert.alert('Error en la autenticación');
+        Alert.alert('Authentication failed');
         return;
       }
 
@@ -58,7 +58,7 @@ export default function Login({ navigation }) {
 
       navigation.navigate('LoadingScreen');
     } catch (error) {
-      console.error('Error en la autenticación:', error);
+      console.error('Authentication error:', error);
     }
   };
 
@@ -77,10 +77,10 @@ export default function Login({ navigation }) {
       <View style={styles.overlay}>
         <Image style={styles.logo} source={require('../assets/LOGO_BOOKSWAP.png')} />
         <View style={styles.form}>
-          <Text style={styles.title}>Iniciar sesión</Text>
+          <Text style={styles.title}>Log In</Text>
 
           <TextInput
-            label="Usuario"
+            label="Username"
             mode="flat"
             value={textName}
             onChangeText={setTextName}
@@ -88,7 +88,7 @@ export default function Login({ navigation }) {
             theme={{ colors: { text: '#000', primary: '#96cf24' } }}
           />
           <TextInput
-            label="Contraseña"
+            label="Password"
             mode="flat"
             value={textPwd}
             onChangeText={setTextPwd}
@@ -104,11 +104,11 @@ export default function Login({ navigation }) {
           />
 
           <Pressable onPress={toApp} style={[styles.button, { backgroundColor: '#006838' }]}>
-            <Text style={styles.buttonText}>Entrar</Text>
+            <Text style={styles.buttonText}>Login</Text>
           </Pressable>
 
           <Pressable onPress={toMain} style={[styles.button, { backgroundColor: '#B25B00' }]}>
-            <Text style={styles.buttonText}>Volver</Text>
+            <Text style={styles.buttonText}>Back</Text>
           </Pressable>
         </View>
       </View>

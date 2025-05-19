@@ -593,29 +593,37 @@ public class Controller {
 	}
 	
 	
-	/**
-	 * @param name      String Name of the user to be deleted
-	 * @param password  String Password of the user to be deleted
-	 * @param userToken Token that will authenticate the user
-	 * @return HttpStatus NOT_FOUND if the user couldn't be found, or HttpStatus
-	 *         NO_CONTENT if user and their attempts have been deleted successfully
-	 */
 	@DeleteMapping("bookswap/deleteAccount")
 	public ResponseEntity<String> deleteAccount(@RequestParam(value = "name") String name,
-			@RequestParam(value = "password") String password, @RequestParam(value = "token") String userToken) {
-		if (!Utilities.checkUser(tokens, userToken)) {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-		}
+	                                            @RequestParam(value = "password") String password,
+	                                            @RequestParam(value = "token") String userToken) {
+	    if (!Utilities.checkUser(tokens, userToken)) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+	    }
 
-		String passwordHash = DigestUtils.sha256Hex(password);
-		Optional<User> user = userRepository.findByUserAndPassword(name, passwordHash);
-		if (user.isPresent()) {
-			userRepository.delete(user.get());
-			tokens.remove(Utilities.findToken(tokens, userToken));
-			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-		} else {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-		}
+	    String passwordHash = DigestUtils.sha256Hex(password);
+	    Optional<User> userOpt = userRepository.findByUserAndPassword(name, passwordHash);
+
+	    if (userOpt.isPresent()) {
+	        User user = userOpt.get();
+
+	        // 1. Borra intercambios donde ownerId o receiverId == user.getId()
+	        exchangeRepository.deleteByOwnerIdOrReceiverId(user.getId(), user.getId());
+
+	        // 2. Borra chats donde participants contengan el username
+	        List<Chat> chatsToDelete = chatRepository.findByParticipantsContaining(user.getUsername());
+	        chatRepository.deleteAll(chatsToDelete);
+
+	        // 3. Borra usuario
+	        userRepository.delete(user);
+
+	        tokens.remove(Utilities.findToken(tokens, userToken));
+
+	        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	    } else {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+	    }
 	}
+
 	
 }

@@ -30,7 +30,7 @@ export default function Home() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'No se pudo obtener tu ubicación.');
+        Alert.alert('Permission Denied', 'Could not get your location.');
         return;
       }
 
@@ -56,7 +56,7 @@ export default function Home() {
 
           setUserMarkers([
             {
-              username: 'THERE ARE NO USERS NEAR U',
+              username: 'THERE ARE NO USERS NEAR YOU',
               address: '',
               lat: userLocation.latitude,
               lng: userLocation.longitude,
@@ -91,7 +91,7 @@ export default function Home() {
       setSelectedUser(res.data);
       setUserModalVisible(true);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar la información del usuario.');
+      Alert.alert('Error', 'Could not load user information.');
     }
   };
 
@@ -175,22 +175,10 @@ export default function Home() {
                   style={styles.modalImage}
                 />
               ) : (
-                <Text style={styles.modalText}>Sin imagen de perfil</Text>
+                <Text style={styles.modalText}>No profile picture</Text>
               )}
-              <Text style={styles.modalTitle}>
-                {selectedUser.username || 'Sin nombre'}
-              </Text>
-              <Text style={styles.modalText}>
-                {selectedUser.address || 'Sin dirección'}
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => {
-                  setUserModalVisible(false);
-                  setSelectedUser(null);
-                }}>
-                <Text style={styles.closeButtonText}>Cerrar</Text>
-              </TouchableOpacity>
+              <Text style={styles.modalTitle}>{selectedUser.username || 'No name'}</Text>
+              <Text style={styles.modalText}>{selectedUser.address || 'No address'}</Text>
               <TouchableOpacity
                 style={styles.exchangeButton}
                 onPress={() => {
@@ -201,6 +189,14 @@ export default function Home() {
                   });
                 }}>
                 <Text style={styles.exchangeButtonText}>Create Exchange</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setUserModalVisible(false);
+                  setSelectedUser(null);
+                }}>
+                <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -215,14 +211,14 @@ export default function Home() {
         onRequestClose={() => setNoUsersModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>¡No hay usuarios cerca de ti!</Text>
+            <Text style={styles.modalTitle}>No users near you!</Text>
             <Text style={styles.modalText}>
-              Intenta actualizar tu ubicación o vuelve más tarde.
+              Try refreshing your location or come back later.
             </Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setNoUsersModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Cerrar</Text>
+              <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -241,7 +237,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#000000', // puedes ajustar el tono aquí
+    backgroundColor: '#000000', 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -294,7 +290,7 @@ const styles = StyleSheet.create({
   closeButton: {
     marginTop: 15,
     padding: 10,
-    backgroundColor: '#d3a3ff',
+    backgroundColor: '#B25B00',
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -302,7 +298,7 @@ const styles = StyleSheet.create({
   exchangeButton: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#a0c4ff',
+    backgroundColor: '#96cf24',
     borderRadius: 10,
     alignItems: 'center',
   },

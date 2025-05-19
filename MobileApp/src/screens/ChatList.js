@@ -23,37 +23,35 @@ const ChatList = () => {
   }, []);
 
   const initializeChats = async () => {
-  try {
-    
-    const response = await axios.get(
-      `http://3.219.75.18:8080/bookswap/getUsersInfo?token=${token}`
-    );
-    const userInfos = response.data || [];
-    setUsersInfo(userInfos);
+    try {
+      const response = await axios.get(
+        `http://3.219.75.18:8080/bookswap/getUsersInfo?token=${token}`
+      );
+      const userInfos = response.data || [];
+      setUsersInfo(userInfos);
 
-    if (userInfos.length === 0) {
-      console.warn('No se pudo obtener información de usuarios.');
+      if (userInfos.length === 0) {
+        console.warn('Could not retrieve user information.');
+        setLoading(false);
+        return;
+      }
+
+      const otherUsernames = userInfos
+        .map((user) => user.username)
+        .filter((uname) => uname !== username);
+
+      await axios.post('http://3.219.75.18:8080/bookswap/createChats', {
+        currentUsername: username,
+        usernames: otherUsernames,
+      });
+
+      await fetchChats(userInfos);
+    } catch (error) {
+      console.error('Error initializing chats:', error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const otherUsernames = userInfos
-      .map((user) => user.username)
-      .filter((uname) => uname !== username);
-
-    await axios.post('http://3.219.75.18:8080/bookswap/createChats', {
-      currentUsername: username,
-      usernames: otherUsernames,
-    });
-
-    await fetchChats(userInfos);
-  } catch (error) {
-    console.error('Error inicializando chats:', error);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const fetchChats = async (userInfos) => {
     try {
@@ -75,7 +73,7 @@ const ChatList = () => {
           ...chat,
           otherUserProfilePicture: otherUser?.profilePicture || null,
           otherUser: {
-            username: otherUser?.username || 'Usuario Desconocido',
+            username: otherUser?.username || 'Unknown User',
             id: otherUser?.id || otherUser?._id || null,
           },
         };
@@ -83,7 +81,7 @@ const ChatList = () => {
 
       setChats(updatedChats);
     } catch (error) {
-      console.error('Error cargando chats:', error);
+      console.error('Error loading chats:', error);
     }
   };
 
@@ -96,7 +94,6 @@ const ChatList = () => {
 
   const renderItem = ({ item }) => {
     const lastMessage = item.last_message || {};
-
     const canNavigate = item.otherUser?.id && currentUserInfo?.id && item._id;
 
     const otherUserProfilePicture = item.otherUserProfilePicture;
@@ -108,9 +105,7 @@ const ChatList = () => {
         style={styles.chatItem}
         onPress={() => {
           if (!canNavigate) {
-            alert(
-              'No se puede acceder a este chat porque faltan datos del usuario.'
-            );
+            alert('Cannot access this chat due to missing user data.');
             return;
           }
 
@@ -122,8 +117,7 @@ const ChatList = () => {
             senderId: currentUserInfo?.id,
           };
 
-          console.log('Navegando a ChatDetails con:', chatParams);
-
+          console.log('Navigating to ChatDetails with:', chatParams);
           navigation.navigate('ChatDetails', chatParams);
         }}>
         <Image
@@ -136,10 +130,10 @@ const ChatList = () => {
         />
         <View style={styles.chatInfo}>
           <Text style={styles.userName}>
-            {item.otherUser?.username || 'Usuario Desconocido'}
+            {item.otherUser?.username || 'Unknown User'}
           </Text>
           <Text style={styles.lastMessage} numberOfLines={1}>
-            {lastMessage.content || 'Sin mensajes'}
+            {lastMessage.content || 'No messages'}
           </Text>
         </View>
         <Text style={styles.timestamp}>
@@ -171,9 +165,9 @@ const ChatList = () => {
 
       {/* Chat List */}
       {loading ? (
-        <Text style={styles.noChatsText}>Cargando chats...</Text>
+        <Text style={styles.noChatsText}>Loading chats...</Text>
       ) : chats.length === 0 ? (
-        <Text style={styles.noChatsText}>No hay chats disponibles</Text>
+        <Text style={styles.noChatsText}>No chats available</Text>
       ) : (
         <FlatList
           data={chats}

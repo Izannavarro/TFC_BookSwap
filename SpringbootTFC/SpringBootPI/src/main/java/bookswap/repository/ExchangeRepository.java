@@ -20,5 +20,7 @@ public interface ExchangeRepository extends MongoRepository<Exchange, String> {
     List<Exchange> findByReceiverIdAndStatus(String receiverId, String status);
 
     List<Exchange> findByOwnerIdAndStatus(String ownerId, String status);
+    
+    void deleteByOwnerIdOrReceiverId(String ownerId, String receiverId);
 
 }

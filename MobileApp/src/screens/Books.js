@@ -16,6 +16,7 @@ import { Picker } from '@react-native-picker/picker';
 import Context from './Context';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default Books = () => {
   const { username, token, userBooks, setUserBooks } = useContext(Context);
@@ -34,26 +35,27 @@ export default Books = () => {
   const [bookToDelete, setBookToDelete] = useState('');
 
   useFocusEffect(
-  React.useCallback(() => {
-    setLoading(true);
-    fetch(`http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setUserBooks(data);
-        } else {
-          setUserBooks([]);
-        }
-      })
-      .catch(console.warn)
-      .finally(() => setLoading(false));
-
-  }, [username, token])
-);
+    React.useCallback(() => {
+      setLoading(true);
+      fetch(
+        `http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${username}&token=${token}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setUserBooks(data);
+          } else {
+            setUserBooks([]);
+          }
+        })
+        .catch(console.warn)
+        .finally(() => setLoading(false));
+    }, [username, token])
+  );
 
   const handleDeleteBook = async () => {
     if (!bookToDelete) {
-      Alert.alert('Error', 'Debes seleccionar un libro para eliminar');
+      Alert.alert('Error', 'You have to choose a book to delete');
       return;
     }
 
@@ -75,7 +77,7 @@ export default Books = () => {
       setUserBooks(userBooks.filter((book) => book.title !== bookToDelete));
       setDeleteModalVisible(false);
       setBookToDelete('');
-      Alert.alert('Éxito', 'El libro ha sido eliminado');
+      Alert.alert('Success', 'The book has been deleted!');
     } catch (error) {
       Alert.alert('Error', error.message);
     }
@@ -85,17 +87,17 @@ export default Books = () => {
     const { title, author, genre, description, image_url } = formData;
 
     if (!title || !author || !genre || !description || !image_url) {
-      Alert.alert('Campos incompletos', 'Por favor completa todos los campos');
+      Alert.alert('Incomplete Fields', 'Please complete all fields');
       return;
     }
 
     if (!image_url.startsWith('data:image/')) {
-      Alert.alert('Imagen inválida', 'Selecciona una imagen válida');
+      Alert.alert('Invalid Image', 'Select a valid Image');
       return;
     }
 
     if (userBooks.some((b) => b.title === title)) {
-      Alert.alert('Duplicado', 'Ya existe un libro con ese título');
+      Alert.alert('Duplicate', 'There is an existent book with that Title.');
       return;
     }
 
@@ -108,7 +110,7 @@ export default Books = () => {
         body: JSON.stringify(bookData),
       });
 
-      if (!response.ok) throw new Error('Error al añadir libro');
+      if (!response.ok) throw new Error('Error adding the book');
 
       const newBook = await response.json();
       setUserBooks([...userBooks, newBook]);
@@ -132,8 +134,8 @@ export default Books = () => {
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       Alert.alert(
-        'Permiso denegado',
-        'Se necesita permiso para acceder a la galería.'
+        'permission denied',
+        'Permission is required to access the gallery.'
       );
       return;
     }
@@ -169,12 +171,12 @@ export default Books = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
           <Text style={{ marginTop: 10, color: '#4CAF50' }}>
-            Cargando libros...
+            Loading books...
           </Text>
         </View>
       ) : userBooks.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Añade un libro</Text>
+          <Text style={styles.emptyText}>Add a Book</Text>
         </View>
       ) : (
         <FlatList
@@ -191,14 +193,14 @@ export default Books = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={() => setAddModalVisible(true)}>
-            <Text style={styles.buttonText}>Añadir Libro</Text>
+            <Text style={styles.buttonText}>Add a Book</Text>
           </TouchableOpacity>
         )}
         {userBooks.length > 0 && (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: 'red' }]}
             onPress={() => setDeleteModalVisible(true)}>
-            <Text style={styles.buttonText}>Eliminar Libro</Text>
+            <Text style={styles.buttonText}>Delete a Book</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -226,10 +228,12 @@ export default Books = () => {
                 </Text>
               </>
             )}
-            <Button
-              title="Cerrar"
-              onPress={() => setDetailModalVisible(false)}
-            />
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.cancelButton}
+              onPress={() => setDetailModalVisible(false)}>
+              <Ionicons name="arrow-back" size={28} color="#333" />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -254,7 +258,7 @@ export default Books = () => {
               style={styles.selectImageButton}
               onPress={selectImage}>
               <Text style={styles.buttonText}>
-                {formData.image_url ? 'Cambiar Imagen' : 'Seleccionar Imagen'}
+                {formData.image_url ? 'Change Image' : 'Select Image'}
               </Text>
             </TouchableOpacity>
             {formData.image_url && (
@@ -263,12 +267,18 @@ export default Books = () => {
                 style={[styles.image, { marginVertical: 10 }]}
               />
             )}
-            <Button title="Añadir" onPress={handleAddBook} />
-            <Button
-              title="Cancelar"
-              color="gray"
-              onPress={() => setAddModalVisible(false)}
-            />
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={handleAddBook}>
+              <Text style={styles.buttonText}>ADD</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.cancelButton}
+              onPress={() => setAddModalVisible(false)}>
+              <Ionicons name="arrow-back" size={22} color="#333" />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -291,9 +301,9 @@ export default Books = () => {
                 />
               ))}
             </Picker>
-            <Button title="Eliminar" color="red" onPress={handleDeleteBook} />
+            <Button title="DELETE" color="red" onPress={handleDeleteBook} />
             <Button
-              title="Cancelar"
+              title="CANCEL"
               color="gray"
               onPress={() => setDeleteModalVisible(false)}
             />
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9F9FC',
   },
   list: {
     paddingBottom: 100,
@@ -317,9 +327,9 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: '#f9f9f9',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -330,13 +340,15 @@ const styles = StyleSheet.create({
     width: 100,
     height: 140,
     resizeMode: 'cover',
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EBEBEB',
   },
   title: {
     marginTop: 10,
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#333',
+    color: '#006838',
   },
   buttonContainer: {
     position: 'absolute',
@@ -349,18 +361,19 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     marginHorizontal: 6,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#96CF24',
     paddingVertical: 14,
-    borderRadius: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    elevation: 2,
+    shadowColor: '#96CF24',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 15,
   },
@@ -372,6 +385,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     color: '#999',
+    fontStyle: 'italic',
     textAlign: 'center',
   },
   modalOverlay: {
@@ -382,44 +396,47 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    elevation: 5,
+    padding: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    elevation: 6,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
+    shadowRadius: 6,
   },
   modalImage: {
     width: '100%',
     height: 200,
     resizeMode: 'contain',
     marginBottom: 15,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#EBEBEB',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#222',
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: 14,
+    color: '#006838',
+    textAlign: 'center',
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#CCC',
     paddingVertical: 8,
     marginBottom: 12,
-    fontSize: 14,
+    fontSize: 15,
   },
   selectImageButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#FFBD77',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: '#FFBD77',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -427,5 +444,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  }
+  },
+  cancelButton: {
+    backgroundColor: '#EBEBEB',
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 56, // Más grande para área táctil
+    height: 56,
+    alignSelf: 'flex-start', // mejor a la izquierda si es "volver"
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  createButton: {
+    backgroundColor: '#96cf24', // Verde BookSwap
+    padding: 14,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#96cf24',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });

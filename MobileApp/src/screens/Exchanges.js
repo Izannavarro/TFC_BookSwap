@@ -59,11 +59,15 @@ export default Exchanges = () => {
   }, [username, token]);
 
   useEffect(() => {
-    if (route.params?.showCreateModal) {
+    if (
+      route.params?.showCreateModal &&
+      !loadingUserBooks &&
+      !loadingUsersInfo
+    ) {
       setTargetUser(route.params.selectedUser || null);
       setFormVisible(true);
     }
-  }, [route.params]);
+  }, [route.params, loadingUserBooks, loadingUsersInfo]);
 
   const fetchMyExchanges = () => {
     fetch(
@@ -73,10 +77,10 @@ export default Exchanges = () => {
       .then((exchangesData) => setExchanges(exchangesData))
       .catch(console.warn);
 
-      console.log(exchanges);
+    console.log(exchanges);
   };
 
-  const renderStatus = (status, exchangeId) => {
+  const renderStatus = (status) => {
     switch (status) {
       case 'pending':
         return <Icon name="clock-outline" size={24} color="orange" />;
@@ -86,7 +90,7 @@ export default Exchanges = () => {
         return (
           <TouchableOpacity
             style={styles.deniedButton}
-            onPress={() => Alert.alert('Intercambio rechazado')}>
+            onPress={() => Alert.alert('Exchange denied')}>
             <Text style={{ color: 'white', fontWeight: 'bold' }}>Denied</Text>
           </TouchableOpacity>
         );
@@ -99,7 +103,7 @@ export default Exchanges = () => {
     try {
       const exchange = receivedExchanges.find((ex) => ex._id === exchangeId);
       if (!exchange) {
-        Alert.alert('Error', 'No se encontró el intercambio.');
+        Alert.alert('Error', 'Exchange not found.');
         return;
       }
 
@@ -108,10 +112,14 @@ export default Exchanges = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: exchangeId, ownerId, status: newStatus }),
       });
+
+      fetchReceivedExchanges();
+
+      Alert.alert('Success', `Exchange  ${newStatus}`);
     } catch (err) {
       Alert.alert(
         'Error',
-        'No se pudo actualizar el estado o eliminar el libro.'
+        'Could not update status or remove the book.'
       );
     }
   };
@@ -125,7 +133,7 @@ export default Exchanges = () => {
       setReceivedExchanges(data);
       setReceivedModalVisible(true);
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron cargar los intercambios recibidos.');
+      Alert.alert('Error', 'Could not load received exchanges.');
     }
   };
 
@@ -133,7 +141,7 @@ export default Exchanges = () => {
     const receiverName = targetUser?.username || selectedReceiverUsername;
 
     if (!offeredBook || !receiverName) {
-      Alert.alert('Error', 'Por favor selecciona el libro y el receptor.');
+      Alert.alert('Error', 'Please select a book and a receiver.');
       return;
     }
 
@@ -217,7 +225,6 @@ export default Exchanges = () => {
           ) : (
             <Text>No receiver data</Text>
           )}
-          {/* Aquí añadimos el estado */}
           <View style={{ marginTop: 8 }}>
             {renderStatus(item.status, item._id)}
           </View>
@@ -311,7 +318,11 @@ export default Exchanges = () => {
               </>
             )}
 
-            <Button title="Create" onPress={handleCreateExchange} />
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={handleCreateExchange}>
+              <Text style={styles.buttonText}>Create</Text>
+            </TouchableOpacity>
             <Button
               title="Cancel"
               color="gray"
@@ -330,7 +341,7 @@ export default Exchanges = () => {
       <Modal visible={receivedModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Intercambios Pendientes</Text>
+            <Text style={styles.modalTitle}>Pending Exchanges</Text>
             {receivedExchanges.length === 0 ? (
               <Text style={styles.emptyText}>
                 You aren't waiting for any exchange.
@@ -345,26 +356,38 @@ export default Exchanges = () => {
                   />
                   <Text>{new Date(ex.exchange_date).toLocaleString()}</Text>
                   <View style={styles.acceptDenyButtons}>
-                    <Button
-                      title="Accept"
-                      onPress={() => updateExchangeStatus(ex._id,ex.owner_id, 'accepted')}
-                    />
-                    <Button
-                      title="Deny"
-                      color="red"
-                      onPress={() => updateExchangeStatus(ex._id,ex.owner_id, 'denied')}
-                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.createButton,
+                        { backgroundColor: '#6C63FF' },
+                      ]}
+                      onPress={() =>
+                        updateExchangeStatus(ex._id, ex.owner_id, 'accepted')
+                      }>
+                      <Text style={styles.buttonText}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.createButton,
+                        { backgroundColor: '#FF4D4D' },
+                      ]}
+                      onPress={() =>
+                        updateExchangeStatus(ex._id, ex.owner_id, 'denied')
+                      }>
+                      <Text style={styles.buttonText}>Deny</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               ))
             )}
-            <Button
-              title="Close"
+            <TouchableOpacity
+              style={styles.createButton}
               onPress={() => {
                 setReceivedModalVisible(false);
                 setReceivedExchanges([]);
-              }}
-            />
+              }}>
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -373,7 +396,7 @@ export default Exchanges = () => {
 };
 
 const AsyncBookTitle = ({ exchange, usersInfo, token }) => {
-  const [title, setTitle] = useState('Cargando...');
+  const [title, setTitle] = useState('Loading...');
 
   useEffect(() => {
     const fetchTitle = async () => {
@@ -381,7 +404,7 @@ const AsyncBookTitle = ({ exchange, usersInfo, token }) => {
         (user) =>
           user.id === exchange.owner_id || user._id === exchange.owner_id
       );
-      if (!ownerUser) return setTitle('Usuario no encontrado');
+      if (!ownerUser) return setTitle('User not Found');
 
       const books = await fetch(
         `http://3.219.75.18:8080/bookswap/getBooks?ownerUsername=${ownerUser.username}&token=${token}`
@@ -391,7 +414,7 @@ const AsyncBookTitle = ({ exchange, usersInfo, token }) => {
         (b) => b.id === exchange.book_id || b._id === exchange.book_id
       );
 
-      setTitle(book?.title || 'Título no disponible');
+      setTitle(book?.title || 'Title not available');
     };
 
     fetchTitle();
@@ -401,24 +424,43 @@ const AsyncBookTitle = ({ exchange, usersInfo, token }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#F9F9FC',
+  },
   exchangeItem: {
     flexDirection: 'row',
-    backgroundColor: '#f2f2f2',
-    padding: 12,
-    marginBottom: 10,
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 12,
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  left: { flex: 1 },
-  right: { flex: 1, alignItems: 'center' },
-  label: { fontWeight: 'bold' },
+  left: {
+    flex: 1,
+  },
+  right: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  label: {
+    fontWeight: '600',
+    marginTop: 4,
+    color: '#333',
+  },
   avatar: {
     width: 60,
     height: 60,
     borderRadius: 30,
     marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#EBEBEB',
   },
   buttonContainer: {
     position: 'absolute',
@@ -428,38 +470,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: '#96cf24',
+    padding: 14,
+    borderRadius: 12,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#96cf24',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  pendingButton: {
+    backgroundColor: '#FFBD77',
+    shadowColor: '#B25B00',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: 'bold',
+    fontSize: 16,
   },
-
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    padding: 24,
     width: '90%',
-    borderRadius: 10,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 18,
+    color: '#006838', // Verde oscuro
+    textAlign: 'center',
   },
   picker: {
     height: 50,
     width: '100%',
+    marginVertical: 10,
   },
   bookImage: {
     width: 70,
@@ -467,28 +526,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
     alignSelf: 'center',
+    resizeMode: 'cover',
   },
   acceptDenyButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 10,
-    marginTop: 8,
+    marginTop: 12,
   },
   errorText: {
-    color: 'red',
+    color: '#B25B00', // Naranja oscuro
     textAlign: 'center',
     marginBottom: 10,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#777',
+    color: '#666',
     marginBottom: 15,
+    fontStyle: 'italic',
   },
   deniedButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#B25B00', // Naranja oscuro
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
+    paddingVertical: 6,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -36,25 +36,23 @@ export default function Register({ navigation }) {
   }
 
   try {
-
     console.log(address);
-    // Paso 1: Validar dirección usando el backend
     const geoResponse = await fetch(
       `http://3.219.75.18:8080/bookswap/geocode?address=${address}`
     );
 
     if (!geoResponse.ok) {
       if (geoResponse.status === 404) {
-        alert('La dirección ingresada no es válida o está mal estructurada.');
+        alert('The entered address is invalid or incorrectly formatted.');
       } else {
-        alert('Hubo un error al verificar la dirección. Inténtalo de nuevo.');
+        alert('There was an error verifying the address. Please try again.');
       }
       return;
     }
 
     const geoData = await geoResponse.json();
     if (!geoData.lat || !geoData.lng) {
-      alert('No se pudieron obtener las coordenadas de la dirección.');
+      alert('Could not retrieve coordinates from the address.');
       return;
     }
 
@@ -63,23 +61,22 @@ export default function Register({ navigation }) {
     console.log(geoData.lat);
     console.log(geoData.lng);
 
-    // Paso 2: Crear usuario
     const response = await fetch('http://3.219.75.18:8080/bookswap/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: textName,
-          password: textPwd,
-          profilePicture: null, 
-          address: address,
-          lat: geoData.lat,
-          lng: geoData.lng,
+        password: textPwd,
+        profilePicture: null,
+        address: address,
+        lat: geoData.lat,
+        lng: geoData.lng,
       }),
     });
 
     const responseText = await response.text();
     if (!response.ok) {
-      alert('Error al registrar usuario. Verifica los datos.');
+      alert('Registration failed. Please check your input.');
       return;
     }
 
@@ -89,11 +86,10 @@ export default function Register({ navigation }) {
     setPicture(null);
 
     console.log(responseText);
-
     navigation.navigate('LoadingScreen');
   } catch (error) {
     console.error(error);
-    alert('Error de red o del servidor. Intenta nuevamente.');
+    alert('Network or server error. Please try again.');
   }
 };
 

@@ -5,8 +5,8 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Image,
+  StyleSheet,
 } from 'react-native';
 import axios from 'axios';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -110,7 +110,7 @@ export default ChatDetails = () => {
 
   return (
     <View style={styles.container}>
-      {/* Cabecera */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
@@ -132,7 +132,7 @@ export default ChatDetails = () => {
         <Text style={styles.headerText}>{otherUsername}</Text>
       </View>
 
-      {/* Mensajes */}
+      {/* Messages */}
       <FlatList
         data={messages}
         keyExtractor={(item, index) =>
@@ -148,10 +148,10 @@ export default ChatDetails = () => {
           style={styles.input}
           value={newMessage}
           onChangeText={setNewMessage}
-          placeholder="Escribe un mensaje..."
+          placeholder="Type a message..."
         />
         <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-          <Text style={{ color: 'white' }}>Enviar</Text>
+          <Text style={{ color: 'white' }}>Send</Text>
         </TouchableOpacity>
       </View>
     </View>
